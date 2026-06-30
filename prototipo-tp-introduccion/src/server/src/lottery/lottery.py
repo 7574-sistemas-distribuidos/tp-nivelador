@@ -18,7 +18,7 @@ class Lottery:
             for bet in bets:
                 writer.writerow(
                     [
-                        bet.agency,
+                        bet.agency_id,
                         bet.first_name,
                         bet.last_name,
                         bet.document,
@@ -31,4 +31,12 @@ class Lottery:
         with open(self.storage_path, "r") as file:
             reader = csv.reader(file, quoting=csv.QUOTE_MINIMAL)
             for row in reader:
-                yield Bet(*row)
+                [agency_id, first_name, last_name, document, birthdate, number] = row
+                yield Bet(
+                    int(agency_id),
+                    first_name,
+                    last_name,
+                    int(document),
+                    birthdate,
+                    int(number),
+                )
