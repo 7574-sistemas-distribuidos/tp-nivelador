@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"sync/atomic"
 	"time"
 )
 
@@ -20,13 +19,12 @@ type ClientConfig struct {
 	ServerPort string
 	InputFile  string
 	OutputFile string
-	AgencyId string
+	AgencyId   string
 }
 
 type Client struct {
-	conn    net.Conn
-	running atomic.Bool
-	config  ClientConfig
+	conn   net.Conn
+	config ClientConfig
 }
 
 func NewClient(config ClientConfig) (*Client, error) {
@@ -36,7 +34,6 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 
 	client := &Client{conn: conn, config: config}
-	client.running.Store(true)
 	return client, nil
 }
 
@@ -47,7 +44,7 @@ func connectToServer(host, port string) (net.Conn, error) {
 	for range CONNECTION_ATTEMPTS_MAX {
 		conn, err = net.Dial("tcp", host+":"+port)
 		if err != nil {
-						slog.Warn("Retrying connection...")
+			slog.Warn("Retrying connection...")
 			time.Sleep(CONNECTION_ATTEMPS_DELAY_MS * time.Millisecond)
 			continue
 		}
@@ -67,21 +64,21 @@ func (client *Client) Run() error {
 
 		_, err := client.conn.Write([]byte(clientMessage))
 		if err != nil {
-			slog.Warn("Error while sending message to server")			
+			slog.Warn("Error while sending message to server")
 			return err
 		}
 
 		responseBuffer := make([]byte, ECHO_CLIENT_BUFFER_SIZE)
 		_, err = client.conn.Read(responseBuffer)
 		if err != nil {
-			slog.Warn("Error while receiving message from server")			
+			slog.Warn("Error while receiving message from server")
 			return err
 		}
 		responseMessage := fmt.Sprintf("Received message %s", responseBuffer)
-		slog.Info(responseMessage)	
+		slog.Info(responseMessage)
 
 		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
 	}
-	
+
 	return nil
 }
