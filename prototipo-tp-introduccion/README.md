@@ -83,11 +83,11 @@ Modificar el código del cliente para que en lugar de conectarse con el servidor
 
 Modificar el cliente para que lea línea a línea el archivo de entrada `INPUT_FILE` con datos de los participantes y envíe los datos de la agencia y las apuestas al servidor.
 
-El servidor emulará la _central de Lotería Nacional_. Deberá recibir los campos de la cada apuesta desde los clientes y almacenar la información mediante la función `store_bet(...)` para control futuro de ganadores.
+El servidor emulará la _central de Lotería Nacional_. Deberá recibir los campos de la cada apuesta desde los clientes y almacenar la información mediante el método `store_bet` de la clase `Lottery` para control futuro de ganadores.
 
-Cuando el cliente acabe de enviar las apuestas, el servidor deberá calcular los participantes que hayan ganado mediante las funciones `load_bets(...)` y`has_won(...)` y retornar al cliente el listado de ganadores.
+Cuando el cliente acabe de enviar las apuestas, el servidor deberá calcular los participantes que hayan ganado mediante los métodos `load_bets` y`has_won` de la clase `Lottery` y retornar al cliente el listado de ganadores.
 
-Las funciones `store_bets(...)`, `load_bets(...)` y `has_won(...)` son provistas por la cátedra y no podrán ser modificadas por el alumno.
+La clases `Lottery` y `Bet` son provistas por la cátedra y no podrán ser modificadas por el alumno.
 
 Finalmente el cliente deberá persistir los ganadores en el archivo `OUTPUT_FILE`.
 
@@ -104,13 +104,13 @@ A partir de este ejercicio, si se ejecutase `make test` habiendo configurado un 
 
 Modificar los clientes para que envíen varias apuestas dentro de un mismo mensaje. Esta modalidad es conocida como procesamiento por _chunks_ , _batchs_ o _lotes_ y permite acortar tiempos de transmisión y procesamiento a lo largo de toda la ejecución.
 
-La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable mediante la variable de entorno BATCH_SIZE. Establecer un valor por defecto de modo tal que los paquetes no excedan los 8kB.
+La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable mediante la variable de entorno `BATCH_SIZE`. Establecer un valor por defecto de modo tal que los paquetes no excedan los 8kB.
 
 Por su parte, el servidor deberá poder comprender los nuevos mensajes y responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
 ### Ejercicio N°8 (Complementario)
 
-Modificar al servidor para que espere a la notificación de las cinco agencias para realizar el sorteo. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
+Modificar al servidor para que espere a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`.No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
 
 Para esto es necesario alternar la atención de los clientes, pero no se admite aún una solución basada en la concurrencia (hint: comunicación asincrónica).
 
@@ -118,7 +118,7 @@ Para esto es necesario alternar la atención de los clientes, pero no se admite 
 
 ### Ejercicio N°9:
 
-Modificar el servidor para que permita aceptar conexiones y procesar mensajes en concurrentemente. Deberá esperar a la notificación de las cinco agencias para realizar el sorteo. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
+Modificar el servidor para que permita aceptar conexiones y procesar mensajes en concurrentemente. Deberá esperar a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
 
 En caso de que el alumno implemente el servidor en Python utilizando _multithreading_, deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
 
