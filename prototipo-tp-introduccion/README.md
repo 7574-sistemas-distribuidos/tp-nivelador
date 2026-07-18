@@ -19,7 +19,7 @@ La entrega consiste en el enlace al último commit que hayan realizado, por ejem
 
 Se proveen pruebas automáticas de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas. En caso de existir discrepancias, estas deben ser discutidas con y aprobadas por los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Se pide a los alumnos leer atentamente el enunciado y **tener en cuenta** los criterios de corrección informados [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
 
-Los cambios a archivos fuera de la carpeta `src`, incluyendo `docker-compose.yaml` y los archivos de prueba de la carpeta `input` **se revertirán** antes de ejecutar las pruebas. También se descartarán las modificaciones realizadas sobre las definiciones en archivos `Dockerfile`.
+Todos los cambios a archivos por fuera de la carpeta `client/src` o `server/src`, serán descartados antes de ejecutar las pruebas. Esto incluye notablemente `server/src_frozen`, `docker-compose.yaml`,`Dockerfile` y los archivos de prueba de la carpeta `input`. Se espera que la solución ofrecida pueda adaptarse a variaciones del contenido de estos archivos, siempre dentro de lo establecido en el enunciado de los ejercicios.
 
 ## Parte 1: Introducción a Docker
 
@@ -86,8 +86,6 @@ Implementar un protocolo de comunicación entre cliente y servidor en donde se m
 El servidor emulará la _central de Lotería Nacional_. Deberá recibir los campos de cada apuesta desde los clientes y almacenar la información mediante el método `store_bet` de la clase `Lottery` para el futuro control de ganadores.
 
 Cuando el cliente acabe de enviar las apuestas, el servidor deberá calcular los participantes que hayan ganado mediante los métodos `load_bets` y `has_won` de la clase `Lottery` y retornar al cliente el listado de ganadores.
-
-Las clases `Lottery` y `Bet` son provistas por la cátedra y no podrán ser modificadas por el alumno.
 
 Finalmente el cliente deberá persistir los ganadores en el archivo `OUTPUT_FILE`.
 
