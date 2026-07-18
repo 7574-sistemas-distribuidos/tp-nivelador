@@ -103,7 +103,9 @@ def main():
             services = yaml.safe_load(f)["services"]
 
         client_service_names = [
-            service for service in services if "client" in services[service]["build"]["context"]
+            service
+            for service in services
+            if "client" in services[service]["build"]["context"]
         ]
 
         logging.info("Awaiting client containers to exit...")

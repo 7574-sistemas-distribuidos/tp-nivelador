@@ -6,6 +6,6 @@ class Bet:
     agency_id: int
     first_name: str
     last_name: str
-    document: str
+    document: int
     birthdate: str
     number: int
