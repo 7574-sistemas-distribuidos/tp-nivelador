@@ -36,7 +36,7 @@ class Lottery:
                     int(agency_id),
                     first_name,
                     last_name,
-                    int(document),
+                    document,
                     birthdate,
                     int(number),
                 )
