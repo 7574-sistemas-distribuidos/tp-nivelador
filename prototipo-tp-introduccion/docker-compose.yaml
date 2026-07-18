@@ -1,7 +1,7 @@
 services:
   server:
     build:
-      context: ./src/server
+      context: ./services/server
       dockerfile: Dockerfile
     container_name: server
     environment:
@@ -11,7 +11,7 @@ services:
 
   client_0:
     build:
-      context: ./src/client
+      context: ./services/client
       dockerfile: Dockerfile
     container_name: client_0
     depends_on:
