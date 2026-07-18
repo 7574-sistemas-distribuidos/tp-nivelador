@@ -7,7 +7,7 @@ COPY . .
 RUN go mod download
 
 # CGO_ENABLED must be disabled to run go binary in Alpine
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/client
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/client ./src/main.go
 
 FROM busybox:latest
 COPY --from=builder /build/bin/client /client

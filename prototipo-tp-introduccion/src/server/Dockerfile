@@ -1,3 +1,3 @@
 FROM python:3-alpine
 COPY . .
-ENTRYPOINT ["python3", "main.py"]
+ENTRYPOINT ["python3", "src/main.py"]

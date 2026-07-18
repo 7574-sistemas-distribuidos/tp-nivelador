@@ -1,10 +1,10 @@
 package client
 
 import (
-	"fmt"
-	"log/slog"
 	"net"
 	"time"
+
+	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/logger"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
@@ -30,6 +30,7 @@ type Client struct {
 func NewClient(config ClientConfig) (*Client, error) {
 	conn, err := connectToServer(config.ServerHost, config.ServerPort)
 	if err != nil {
+		logger.Warn("connect-to-server", logger.Fail)
 		return nil, err
 	}
 
@@ -38,17 +39,20 @@ func NewClient(config ClientConfig) (*Client, error) {
 }
 
 func connectToServer(host, port string) (net.Conn, error) {
+	const action = "connect-to-server"
 	var err error
 	var conn net.Conn
 
-	for range CONNECTION_ATTEMPTS_MAX {
+	logger.Info(action, logger.InProgress)
+	for i := range CONNECTION_ATTEMPTS_MAX {
 		conn, err = net.Dial("tcp", host+":"+port)
 		if err != nil {
-			slog.Warn("Retrying connection...")
+			logger.Warn(action, logger.Fail, "attempt", i)
 			time.Sleep(CONNECTION_ATTEMPS_DELAY_MS * time.Millisecond)
 			continue
 		}
-		slog.Info("Connected to server")
+
+		logger.Info(action, logger.Success)
 		break
 	}
 
@@ -56,29 +60,36 @@ func connectToServer(host, port string) (net.Conn, error) {
 }
 
 func (client *Client) Run() error {
+	const mainAction = "test-echo-server"
 	defer client.conn.Close()
 
 	for messageId := range ECHO_CLIENT_MESSAGE_AMOUNT {
-		clientMessage := fmt.Sprintf("agency_id=%s message_id=%d", client.config.AgencyId, messageId)
-		slog.Info("Sending message " + clientMessage)
+		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
+		logger.Info(mainAction, logger.InProgress, messageArgs...)
+
+		clientMessage := client.config.AgencyId
 
 		_, err := client.conn.Write([]byte(clientMessage))
 		if err != nil {
-			slog.Warn("Error while sending message to server")
+			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
 
 		responseBuffer := make([]byte, ECHO_CLIENT_BUFFER_SIZE)
 		_, err = client.conn.Read(responseBuffer)
 		if err != nil {
-			slog.Warn("Error while receiving message from server")
+			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err
 		}
-		responseMessage := fmt.Sprintf("Received message %s", responseBuffer)
-		slog.Info(responseMessage)
+
+		if string(responseBuffer) == clientMessage {
+			logger.Error("check-response", logger.Fail, messageArgs...)
+			return err
+		}
 
 		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
 	}
+	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
 
 	return nil
 }

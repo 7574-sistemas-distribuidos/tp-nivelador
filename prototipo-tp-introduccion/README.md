@@ -33,21 +33,19 @@ Instalar Docker Engine siguiendo la [guía de instalación oficial](https://docs
 Luego, iniciar los contenedores del trabajo con `make up`. Tras la descarga de las imágenes base y la construcción de las imágenes derivadas de ellas se deberían poder ver logs de ejecución, ej.:
 
 ```bash
-client_0  | 2026/06/25 19:18:21 WARN Retrying connection...
-server    | 2026/06/25 19:18:21 INFO Listening to connections
-server    | 2026/06/25 19:18:22 INFO A new client has connected
-client_0  | 2026/06/25 19:18:22 INFO Connected to server
-client_0  | 2026/06/25 19:18:22 INFO Sending message agency_id=0 message_id=0
-server    | 2026/06/25 19:18:22 INFO Echoing to client agency_id=0 message_id=0
-client_0  | 2026/06/25 19:18:22 INFO Received message agency_id=0 message_id=0
-client_0  | 2026/06/25 19:18:23 INFO Sending message agency_id=0 message_id=1
-client_0  | 2026/06/25 19:18:23 INFO Received message agency_id=0 message_id=1
-server    | 2026/06/25 19:18:23 INFO Echoing to client agency_id=0 message_id=1
-client_0  | 2026/06/25 19:18:24 INFO Sending message agency_id=0 message_id=2
-client_0  | 2026/06/25 19:18:24 INFO Received message agency_id=0 message_id=2
-server    | 2026/06/25 19:18:24 INFO Echoing to client agency_id=0 message_id=2
-server    | 2026/06/25 19:18:25 INFO Client disconnected
-server    | 2026/06/25 19:18:25 INFO Listening to connections
+client_0  | 2026/07/18 01:19:28 INFO action=connect-to-server result=in-progress
+client_0  | 2026/07/18 01:19:28 WARN action=connect-to-server result=fail attempt=0
+client_0  | 2026/07/18 01:19:28 WARN action=connect-to-server result=fail attempt=1
+server    | 2026/07/18 01:19:28 INFO action=accept-connection result=in-progress 
+client_0  | 2026/07/18 01:19:28 INFO action=connect-to-server result=success
+client_0  | 2026/07/18 01:19:28 INFO action=test-echo-server result=in-progress agency-id=0 message-id=0
+server    | 2026/07/18 01:19:28 INFO action=accept-connection result=success 
+server    | 2026/07/18 01:19:28 INFO action=handle-client result=in-progress 
+client_0  | 2026/07/18 01:19:29 INFO action=test-echo-server result=in-progress agency-id=0 message-id=1
+client_0  | 2026/07/18 01:19:30 INFO action=test-echo-server result=in-progress agency-id=0 message-id=2
+client_0  | 2026/07/18 01:19:31 INFO action=test-echo-server result=success agency-id=0
+server    | 2026/07/18 01:19:31 INFO action=handle-client result=success messages-amount=3
+server    | 2026/07/18 01:19:31 INFO action=accept-connection result=in-progress 
 client_0 exited with code 0
 ```
 

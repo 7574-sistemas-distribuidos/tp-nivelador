@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"log/slog"
 	"os"
 
-	client "github.com/7574-sistemas-distribuidos/tp-introduccion/src"
+	client "github.com/7574-sistemas-distribuidos/tp-introduccion/src/client"
+	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/logger"
 )
 
 func loadConfig() (client.ClientConfig, error) {
@@ -39,25 +39,25 @@ func loadConfig() (client.ClientConfig, error) {
 		ServerPort: serverPort,
 		InputFile:  inputFile,
 		OutputFile: outputFile,
-		AgencyId: agencyId,
+		AgencyId:   agencyId,
 	}, nil
 }
 
 func run() int {
 	config, err := loadConfig()
 	if err != nil {
-		slog.Error("While loading config", "err", err)
+		logger.Error("load-config", logger.Fail, "err", err)
 		return 1
 	}
 
 	client, err := client.NewClient(config)
 	if err != nil {
-		slog.Error("While connecting to server", "err", err)
+		logger.Error("client-new", logger.Fail, "err", err)
 		return 1
 	}
 
 	if err := client.Run(); err != nil {
-		slog.Error("Client stopped with error", "err", err)
+		logger.Error("client-run", logger.Fail, "err", err)
 		return 1
 	}
 	return 0
