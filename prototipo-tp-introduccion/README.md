@@ -4,29 +4,26 @@
 
 ## Introducción
 
-El objetivo de este trabajo es tanto repasar conceptos fundamentales de la concurrencia y la comunicación, como introducir a los estudiantes al desarrollo de sistemas distribuídos, en donde el código de las partes que lo componen se encapuslan en _containers_, orquestrados en este caso por la herramienta [Docker Compose](https://docs.docker.com/compose/).
+El objetivo de este trabajo es tanto repasar conceptos fundamentales de la concurrencia y la comunicación, como introducir a los estudiantes al desarrollo de sistemas distribuídos, en donde el código de las partes que lo componen se encapsulan en _containers_, orquestados en este caso por la herramienta [Docker Compose](https://docs.docker.com/compose/).
 
-Se provee un esqueleto básico de "echo server". El cliente (Golang) y el servidor (Python) fueron desarrollados en diferentes lenguajes simplemente para mostrar cómo dos lenguajes de programación pueden convivir en el mismo proyecto sin necesidad de bindings o complejas integraciones.
+Los alumnos deberán resolver una guía de ejercicios incrementales, que los llevará desde un esqueleto básico de "echo server" hasta un sistema distribuído simple en donde distintas agencias de lotería cargan participantes en un servidor central, que realizará el sorteo e informará los participantes que han ganado.
 
-Los alumnos deberán resolver una guía de ejercicios incrementales, que los llevará desde un esqueleto básico de "echo server" hasta un sistema distribuído simple en donde distintas agencias de lotería cargan participantes en un servidor central, que realizará un sorteo y les informará los participantes que han ganado.
+El cliente y servidor fueron desarrollados en Golang y Python para mostrar cómo dos lenguajes de programación pueden convivir en el mismo proyecto sin necesidad de bindings o complejas integraciones.
 
 ## Condiciones de Entrega
 
-Se espera que los alumnos realicen un _fork_ del presente repositorio y que trabajen sobre el mismo en sucesivos commits siguiendo los ejercicios listados a continuación. Aquellos marcados como "_(Complementario)_" no se evaluarán, por lo que se recomienda abordarlos tras haber completado los obligatorios.
+Se espera que los alumnos realicen un _fork_ del presente repositorio y que trabajen sobre el mismo en sucesivos commits siguiendo los ejercicios listados a continuación. Además deberán detallar en el archivo `INFORME.md` los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado y los mecanismos para sincronizar la ejecución concurrente.
 
 La entrega consiste en el enlace al último commit que hayan realizado, por ejemplo:
-
 `https://github.com/7574-sistemas-distribuidos/tp-coordinacion/commit/6de10feffc3464194fc87536266f70ae1cb73fac`
 
-Se espera que se detallen en el archivo `INFORME.md` los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado y los mecanismos para sincronizar la ejecución concurrente.
+Se proveen pruebas automáticas de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas. En caso de existir discrepancias, estas deben ser discutidas con y aprobadas por los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Se pide a los alumnos leer atentamente el enunciado y **tener en cuenta** los criterios de corrección informados [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
 
-Además se proveen pruebas automáticas de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Se pide a los alumnos leer atentamente el enunciado y **tener en cuenta** los criterios de corrección informados [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
-
-Los cambios a archivos fuera de la carpeta `src`, incluyendo `docker-compose.yaml` y los archivos de prueba de la carpeta `input` **se revertirán** antes de ejecutar las pruebas. También se descartaran las modificaciones realizadas sobre las definiciones en archivos `Dockerfile`.
+Los cambios a archivos fuera de la carpeta `src`, incluyendo `docker-compose.yaml` y los archivos de prueba de la carpeta `input` **se revertirán** antes de ejecutar las pruebas. También se descartarán las modificaciones realizadas sobre las definiciones en archivos `Dockerfile`.
 
 ## Parte 1: Introducción a Docker
 
-### Ejercicio N°1:
+### Ejercicio N°0:
 
 Instalar Docker Engine siguiendo la [guía de instalación oficial](https://docs.docker.com/engine/install/) para el sistema operativo y distribución correspondiente, ej.: Paso a paso para [Ubuntu](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository). En Windows y MacOs Docker Engine se distribuye dentro de la herramienta comercial Docker Desktop.
 
@@ -59,71 +56,59 @@ client_0 exited with code 0
 
 `make test`: Inicia los contenedores del sistema, espera a que los clientes finalicen, realiza distintas pruebas para validar la implementación y detiene los contenederes.
 
+### Ejercicio N°1
+
+Definir en el archivo `docker-compose.yaml` cinco contenedores de clientes, basados en el mismo archivo `Dockerfile`. Editar sus nombres y la variable de entorno `AGENCY_ID` para poder diferenciar las entradas de los logs. Finalmente reiniciar los contenedores ejecutando `make down`, seguido de `make up`.
+
+El echo server atiende a los clientes de forma serial (no concurrente), pero aún así las entradas de los logs pueden mezclarse debido al órden en el que se escriben en el archivo de salida de Docker.
+
 ### Ejercicio N°2
 
-Definir en el archivo `docker-compose.yaml` más contenedores de clientes, basados en el mismo archivo `Dockerfile`. Editar sus nombres y la variable de entorno `AGENCY_ID` . Finalmente reiniciar los contenedores ejecutando `make down` y `make up`. Deberían reflejarse en los logs la ejecución de todos los clientes definidos. Las entradas de los logs pueden mezclarse debido al órden en el que se escriben en el archivo de salida de Docker, de momento el echo server no atiende a clientes concurrentemente.
+Exponer los puertos del servidor al equipo anfitrión dentro de las definiciones del archivo `docker-compose.yaml`, de forma tal que al ejecutar `echo "Hello World" | nc localhost 5678` el proceso en el equipo anfitrión se pueda conectar con el proceso dentro de Docker y reciba el eco del mensaje enviado.
 
-### Ejercicio N°3 (Complementario)
+__Opcional:__ Crear un script de bash que permita verificar el correcto funcionamiento del servidor utilizando el comando `netcat` dentro de un contenedor sin utilizar el sistema del equipo anfitrión. Es decir, sin exponer los puertos del servidor al equipo anfitrión, ni editar el archivo `docker-compose.yaml`. (hint: `docker network`).
 
-Exponer los puertos del servidor al equipo anfitrión dentro de las definiciones del archivo `docker-compose.yaml` , de forma tal que al ejecutar `echo "Hello World" | nc localhost 5678` el proceso en el equipo anfitrión se pueda conectar con el proceso dentro de Docker y reciba el eco del mensaje enviado.
+### Ejercicio N°3
 
-### Ejercicio N°4 (Complementario)
+Modificar el código del cliente para que se lea línea por línea el archivo `INPUT_FILE` y se envíen al servidor en un mensaje individual. Las respuestas del servidor deben persistirse en el archivo `OUTPUT_FILE`.
 
-Crear un script de bash que sin exponer los puertos del servidor al equipo anfitrión, ni editar el archivo `docker-compose.yaml` permita verificar el correcto funcionamiento del servidor utilizando el comando `netcat` para interactuar con el mismo, como en el **Ejercicio N°3** (hint: `docker network`).
-
-### Ejercicio N°5
-
-Modificar el código del cliente para que en lugar de conectarse con el servidor lea la primera línea del archivo `INPUT_FILE` y la escriba en el archivo `OUTPUT_FILE`. Los cambios en los archivos de entrada deben reflejarse entre ejecuciones sin que se requiera reconstruír las imágenes de Docker. Además el archivo de salida debería persistirse por fuera del contenedor y ser accesible desde el equipo anfitrión en el directorio `output` (hint: `docker volumes`).
+El archivo de salida deberá persistirse por fuera del contenedor del cliente y ser accesible desde el equipo anfitrión en el directorio `output`. Cualquier cambio en los archivos de entrada entre ejecuciones no debe obligar a reconstruír la imágen del cliente (hint: `docker volumes`).
 
 ## Parte 2: Repaso de Comunicaciones
 
-### Ejercicio N°6
+### Ejercicio N°4
 
-Modificar el cliente para que lea línea a línea el archivo de entrada `INPUT_FILE` con datos de los participantes y envíe los datos de la agencia y las apuestas al servidor.
-
-El servidor emulará la _central de Lotería Nacional_. Deberá recibir los campos de la cada apuesta desde los clientes y almacenar la información mediante el método `store_bet` de la clase `Lottery` para control futuro de ganadores.
-
-Cuando el cliente acabe de enviar las apuestas, el servidor deberá calcular los participantes que hayan ganado mediante los métodos `load_bets` y`has_won` de la clase `Lottery` y retornar al cliente el listado de ganadores.
-
-La clases `Lottery` y `Bet` son provistas por la cátedra y no podrán ser modificadas por el alumno.
-
-Finalmente el cliente deberá persistir los ganadores en el archivo `OUTPUT_FILE`.
-
-Se deberá implementar un módulo de comunicación entre el cliente y el servidor donde se maneje el envío y la recepción de los paquetes, el cual se espera que contemple:
-
-- Definición de un protocolo para el envío de los mensajes.
-- Serialización de los datos.
+Implementar un protocolo de comunicación entre cliente y servidor en donde se maneje el envío y la recepción de los los datos de la agencia y las apuestas. Se espera que contemple:
+- Correcta serialización y deserialización de los datos.
 - Correcta separación de responsabilidades entre modelo de dominio y capa de comunicación.
 - Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
 
-A partir de este ejercicio, si se ejecutase `make test` habiendo configurado un solo cliente la primera prueba debería pasar exitosamente. Además ya no se deberían utilizar las constantes `ECHO_CLIENT_*`, ni `ECHO_SERVER_*`, que solo servían de ejemplo. El grueso de ña sincronización entre cliente y servidor debe estar dada por el intercambio de mensajes, no por la espera de un lapso de tiempo prefijado.
+El servidor emulará la _central de Lotería Nacional_. Deberá recibir los campos de cada apuesta desde los clientes y almacenar la información mediante el método `store_bet` de la clase `Lottery` para el futuro control de ganadores.
 
-### Ejercicio N°7
+Cuando el cliente acabe de enviar las apuestas, el servidor deberá calcular los participantes que hayan ganado mediante los métodos `load_bets` y `has_won` de la clase `Lottery` y retornar al cliente el listado de ganadores.
 
-Modificar los clientes para que envíen varias apuestas dentro de un mismo mensaje. Esta modalidad es conocida como procesamiento por _chunks_ , _batchs_ o _lotes_ y permite acortar tiempos de transmisión y procesamiento a lo largo de toda la ejecución.
+Las clases `Lottery` y `Bet` son provistas por la cátedra y no podrán ser modificadas por el alumno.
 
-La cantidad máxima de apuestas dentro de cada _batch_ debe ser configurable mediante la variable de entorno `BATCH_SIZE`. Establecer un valor por defecto de modo tal que los paquetes no excedan los 8kB.
+Finalmente el cliente deberá persistir los ganadores en el archivo `OUTPUT_FILE`.
 
-Por su parte, el servidor deberá poder comprender los nuevos mensajes y responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
+Eliminar las constantes `ECHO_CLIENT_*`/`ECHO_SERVER_*`. El grueso de la sincronización entre cliente y servidor debe estar dada por el intercambio de mensajes, no por la espera de un lapso de tiempo prefijado.
 
-### Ejercicio N°8 (Complementario)
+### Ejercicio N°5
 
-Modificar al servidor para que espere a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`.No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
+Modificar los clientes para que envíen varias apuestas dentro de un mismo mensaje. Esta modalidad es conocida como procesamiento por _chunks_ , _batchs_ o _lotes_ y permite acortar tiempos de transmisión y procesamiento a lo largo de toda la ejecución. Por su parte, el servidor deberá poder comprender los nuevos mensajes y responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
-Para esto es necesario alternar la atención de los clientes, pero no se admite aún una solución basada en la concurrencia (hint: comunicación asincrónica).
+El tamaño máximo de cada _batch_ debe ser configurable mediante la variable de entorno `BATCH_MAX_SIZE_KB`. No es obligatorio manejar registros de apuestas divididos entre más de un paquete; se admiten soluciones en donde se envíen tantos registros de apuesta completos como quepan en un _batch_.
 
 ## Parte 3: Repaso de Concurrencia
 
-### Ejercicio N°9:
+### Ejercicio N°6:
 
-Modificar el servidor para que permita aceptar conexiones y procesar mensajes en concurrentemente. Deberá esperar a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
+Modificar el servidor para que permita aceptar conexiones y procesar mensajes concurrentemente. Deberá esperar a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
 
 En caso de que el alumno implemente el servidor en Python utilizando _multithreading_, deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
 
-### Ejercicio N°10:
+### Ejercicio N°7:
 
 Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la signal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los _file descriptors_ (entre los que se encuentran archivos, sockets, ipcs, threads y procesos) deben cerrarse correctamente antes que el hilo de la aplicación principal finalice (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
 
-Puede adoptarse un enfoque "polite" respecto a no interrumpir la comunicación abruptamente, pero dado que se trata de una señal de terminación, el tiempo de cierre del sistema no debería quedar sujeto a la respuesta de un ente externo al mismo.
-
-Al finalizar este ejercicio deberían pasar todas las pruebas de `make test` bajo las **Condiciones de Entrega**.
+Puede adoptarse un enfoque "polite" respecto a no interrumpir la comunicación abruptamente, pero dado que se trata de una señal de terminación, el tiempo de cierre del sistema deberá ser conocido y acotado.
