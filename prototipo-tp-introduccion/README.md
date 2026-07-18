@@ -97,7 +97,7 @@ Eliminar las constantes `ECHO_CLIENT_*`/`ECHO_SERVER_*`. El grueso de la sincron
 
 Modificar los clientes para que envíen varias apuestas dentro de un mismo mensaje. Esta modalidad es conocida como procesamiento por _chunks_ , _batchs_ o _lotes_ y permite acortar tiempos de transmisión y procesamiento a lo largo de toda la ejecución. Por su parte, el servidor deberá poder comprender los nuevos mensajes y responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
-El tamaño máximo de cada _batch_ debe ser configurable mediante la variable de entorno `BATCH_MAX_SIZE_KB`. No es obligatorio manejar registros de apuestas divididos entre más de un paquete; se admiten soluciones en donde se envíen tantos registros de apuesta completos como quepan en un _batch_.
+La cantidad de registros de apuesta dentro de cada _batch_ debe ser configurable mediante la variable de entorno `BATCH_SIZE`. No es obligatorio manejar registros de apuestas divididos entre más de un paquete; se admiten soluciones en donde se envíen tantos registros de apuesta completos como quepan en un _batch_.
 
 ## Parte 3: Repaso de Concurrencia
 
