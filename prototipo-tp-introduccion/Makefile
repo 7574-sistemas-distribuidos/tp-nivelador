@@ -18,7 +18,7 @@ logs:
 
 test:
 	mkdir -p output
-	#rm ./output/* -f
+	rm ./output/* -f
 	COMPOSE_HTTP_TIMEOUT=300 docker compose -f docker-compose.yaml up --build --remove-orphans --detach
 	PYTHONPATH="$(PWD)/services/server/src_frozen" python3 ./verify_output.py; EXIT_CODE=$$?; \
 	docker compose -f docker-compose.yaml stop -t 5; \
