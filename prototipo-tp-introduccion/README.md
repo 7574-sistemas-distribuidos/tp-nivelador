@@ -27,7 +27,7 @@ Todos los cambios a archivos por fuera de la carpeta `client/src` o `server/src`
 
 Instalar Docker Engine siguiendo la [guía de instalación oficial](https://docs.docker.com/engine/install/) para el sistema operativo y distribución correspondiente, ej.: Paso a paso para [Ubuntu](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository). En Windows y MacOs Docker Engine se distribuye dentro de la herramienta comercial Docker Desktop.
 
-Luego, iniciar los contenedores del trabajo con `make up`. Tras la descarga de las imágenes base y la construcción de las imágenes derivadas de ellas se deberían poder ver logs de ejecución, ej.:
+Luego, iniciar los contenedores del trabajo con `make up`. Tras la descarga de las imágenes base y la construcción de las imágenes derivadas, ver los logs de ejecución usando `make logs`:
 
 ```bash
 client_0  | 2026/07/18 01:19:28 INFO action=connect-to-server result=in-progress
