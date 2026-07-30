@@ -13,7 +13,7 @@ down:
 .PHONY: down
 
 logs:
-	docker compose -f docker-compose.yaml logs
+	docker compose -f docker-compose.yaml logs --follow
 .PHONY: logs
 
 test:
