@@ -51,7 +51,7 @@ class OutputFiles(TestCase):
 
     def test(self, log, docker_compose_path) -> None:
         try:
-            services = docker_compose.read_services(docker_compose_path)
+            services = docker_compose.read(docker_compose_path)["services"]
             client_services_names = docker_compose.find_services_by_context(
                 services, "client"
             )

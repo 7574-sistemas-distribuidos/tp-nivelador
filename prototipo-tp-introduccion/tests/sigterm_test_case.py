@@ -33,10 +33,30 @@ class SigtermHandling(TestCase):
             docker.down()
 
     def test(self, log, docker_compose_path) -> None:
-        services = docker_compose.read_services(docker_compose_path)
+        docker_compose_content = docker_compose.read(docker_compose_path)
+        services = docker_compose_content["services"]
+        client_service_name = docker_compose.find_services_by_context(
+            services, "client"
+        )[0]
+        server_service_name = docker_compose.find_services_by_context(
+            services, "server"
+        )[0]
 
-        client_service = docker_compose.find_services_by_context(services, "client")[0]
-        self._test_stopping_service(log, client_service)
+        agency_quorum_min = docker_compose.find_environment_variable(
+            services[server_service_name], "AGENCY_QUORUM_MIN"
+        )
+        docker_compose.add_environment_variable(
+            services[server_service_name],
+            "AGENCY_QUORUM_MIN",
+            int(agency_quorum_min) + 1,
+        )
+        docker_compose.write(docker_compose_path, docker_compose_content)
 
-        server_service = docker_compose.find_services_by_context(services, "server")[0]
-        self._test_stopping_service(log, server_service)
+        try:
+            self._test_stopping_service(log, client_service_name)
+            self._test_stopping_service(log, server_service_name)
+        finally:
+            docker_compose.add_environment_variable(
+                services[server_service_name], "AGENCY_QUORUM_MIN", agency_quorum_min
+            )
+            docker_compose.write(docker_compose_path, docker_compose_content)
