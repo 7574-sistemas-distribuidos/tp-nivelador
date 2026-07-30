@@ -1,10 +1,10 @@
 import sys
 import logging
 
-from tests import OutputFiles, SigtermHandling, TestCase
+from tests import OutputFiles, SigtermHandling, Concurrency, TestCase
 
 DOCKER_COMPOSE_PATH = "./docker-compose.yaml"
-TEST_CASES: list[TestCase] = [OutputFiles(), SigtermHandling()]
+TEST_CASES: list[TestCase] = [OutputFiles(), SigtermHandling(), Concurrency()]
 
 
 def main():
