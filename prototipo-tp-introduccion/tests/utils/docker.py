@@ -1,3 +1,5 @@
+import json
+
 from . import shell_cmd
 
 
@@ -26,3 +28,21 @@ def await_containers(service_names: list[str]) -> int:
             zero_exit_code_count += 1
 
     return zero_exit_code_count
+
+
+def get_container_pids(service_name: str):
+    result = shell_cmd.run(
+        [
+            "docker",
+            "stats",
+            "--format",
+            "json",
+            "--no-stream",
+            "--no-trunc",
+            service_name,
+        ],
+        capture=True,
+    )
+    output = json.loads(result.stdout.decode('utf-8'))
+
+    return int(output["PIDs"])

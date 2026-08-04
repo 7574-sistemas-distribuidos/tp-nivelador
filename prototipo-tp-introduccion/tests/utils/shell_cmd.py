@@ -18,3 +18,11 @@ def run(
         shell=shell,
         env=env,
     )
+
+
+def search_files_containing(base_path: str, lookup_string: str) -> list[str]:
+    result = run(["grep", "-lir", "-i",  lookup_string, base_path], capture=True)
+    output = result.stdout.decode('utf-8')
+    if len(output) > 0:
+        return output.split("\n")
+    return []
