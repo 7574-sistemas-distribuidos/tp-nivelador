@@ -1,10 +1,10 @@
 import sys
 import logging
 
-from tests import OutputFiles, SigtermHandling, Concurrency, TestCase
+from tests import OutputFiles, SigtermHandling, Concurrency, Json, TestCase
 
 DOCKER_COMPOSE_PATH = "./docker-compose.yaml"
-TEST_CASES: list[TestCase] = [OutputFiles(), SigtermHandling(), Concurrency()]
+TEST_CASES: list[TestCase] = [OutputFiles(), SigtermHandling(), Concurrency(), Json()]
 
 
 def main():
@@ -23,10 +23,10 @@ def main():
                 ),
                 DOCKER_COMPOSE_PATH,
             )
+            logging.info(f"test={test_case.name} result=success")
         except Exception as e:
-            logging.error(f"test={test_case.name} result=success err={e}")
+            logging.error(f"test={test_case.name} result=fail err={e}")
             exit_code = 1
-        logging.info(f"test={test_case.name} result=success")
     return exit_code
 
 
