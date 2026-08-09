@@ -1,31 +1,21 @@
 import sys
-import logging
+from tests import OutputFiles, SigtermHandling, Concurrency, Json
 
-from tests import OutputFiles, SigtermHandling, Concurrency, Json, TestCase
-
-DOCKER_COMPOSE_PATH = "./docker-compose.yaml"
-TEST_CASES: list[TestCase] = [OutputFiles(), SigtermHandling(), Concurrency(), Json()]
+TEST_CASES = [Json, OutputFiles, SigtermHandling, Concurrency]
+MESSAGE_PADDING = 32
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        datefmt="%Y/%m/%d %H:%M:%S",
-        format=f"%(asctime)s %(levelname)s %(message)s",
-    )
     exit_code = 0
     for test_case in TEST_CASES:
-        logging.info(f"test={test_case.name} result=in-progress")
+        print(f"Testing {test_case.title.ljust(MESSAGE_PADDING, ".")}", end="")
         try:
-            test_case.test(
-                lambda msg: logging.info(
-                    f"test={test_case.name} result=in-progress msg={msg}"
-                ),
-                DOCKER_COMPOSE_PATH,
-            )
-            logging.info(f"test={test_case.name} result=success")
+            test_case.test()
+            print("OK")
         except Exception as e:
-            logging.error(f"test={test_case.name} result=fail err={e}")
+            print("ERROR")
+            print(e, file=sys.stderr)
+            print(test_case.error_hint, file=sys.stderr)
             exit_code = 1
     return exit_code
 
