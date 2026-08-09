@@ -3,12 +3,18 @@ import json
 from . import shell_cmd
 
 
-def up():
-    shell_cmd.run(["make", "up"], capture=False)
+def up(docker_compose_path: str | None):
+    args = ["make", "up"]
+    if docker_compose_path:
+        args.append(f"FILE={docker_compose_path}")
+    shell_cmd.run(args, capture=False)
 
 
-def down():
-    shell_cmd.run(["make", "down"], capture=False)
+def down(docker_compose_path: str | None):
+    args = ["make", "down"]
+    if docker_compose_path:
+        args.append(f"FILE={docker_compose_path}")
+    shell_cmd.run(args, capture=False)
 
 
 def stop(service_names: list[str], grace_period_seconds=10):
@@ -43,6 +49,6 @@ def get_container_pids(service_name: str):
         ],
         capture=True,
     )
-    output = json.loads(result.stdout.decode('utf-8'))
+    output = json.loads(result.stdout.decode("utf-8"))
 
     return int(output["PIDs"])
