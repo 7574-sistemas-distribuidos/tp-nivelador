@@ -15,6 +15,7 @@ def _stop_service(client_service) -> None:
 
 class SigtermHandling(TestCase):
     title = "sigterm handling"
+    error_hint = "The SIGTERM signal must be correctly handled as soon as possible and at any stage of the communication in both the clients and the server"
 
     @staticmethod
     def _test_stopping_service(service_name) -> None:

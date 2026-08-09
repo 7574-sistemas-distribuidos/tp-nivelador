@@ -15,7 +15,7 @@ def main():
         except Exception as e:
             print("ERROR")
             print(e, file=sys.stderr)
-            print(test_case.error_hint, file=sys.stderr)
+            print(f"\nHINT: {test_case.error_hint}\n", file=sys.stderr)
             exit_code = 1
     return exit_code
 

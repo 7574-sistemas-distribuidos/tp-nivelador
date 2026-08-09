@@ -9,6 +9,7 @@ DOCKER_COMPOSE_PATH = "docker-compose.yaml"
 
 class OutputFiles(TestCase):
     title = "winners list in output files"
+    error_hint = "The winners list is scoped to the agency/client that loaded the record in the system"
 
     @staticmethod
     def _verify_client_output(client_service):

@@ -4,6 +4,7 @@ from utils import shell_cmd
 
 class Json(TestCase):
     title = "json import"
+    error_hint = "Json import is forbidden for this practical task"
 
     @staticmethod
     def test() -> None:

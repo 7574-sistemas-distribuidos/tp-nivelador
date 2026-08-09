@@ -9,6 +9,7 @@ SECONDS_BEFORE_CONCURRENCY_CHECK = 5
 
 class Concurrency(TestCase):
     title = "spawned processes/threads"
+    error_hint = "The server should spawn and orchestrate threads or processes to handle clients requests"
 
     @staticmethod
     def _test() -> None:
