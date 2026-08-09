@@ -7,6 +7,7 @@ import server
 SERVER_HOST = os.environ["SERVER_HOST"]
 SERVER_PORT = int(os.environ["SERVER_PORT"])
 
+
 def main():
     logger.init()
     s = server.Server(SERVER_HOST, SERVER_PORT)
