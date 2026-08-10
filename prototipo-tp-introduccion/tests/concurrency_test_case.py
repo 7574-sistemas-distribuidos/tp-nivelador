@@ -1,11 +1,7 @@
-import time
-
 from .utils import docker, docker_compose
 from .test_case import TestCase
 
 DOCKER_COMPOSE_PATH = "docker-compose-no-agency-quorum.yaml"
-SECONDS_BEFORE_CONCURRENCY_CHECK = 5
-
 
 class Concurrency(TestCase):
     title = "spawned processes/threads"
@@ -18,7 +14,7 @@ class Concurrency(TestCase):
         server_service_name = docker_compose.find_services_by_context(
             services, "server"
         )[0]
-        time.sleep(SECONDS_BEFORE_CONCURRENCY_CHECK)
+        Concurrency.await_net_io_stop(server_service_name)
         server_pids = docker.get_container_pids(server_service_name)
         if server_pids < 2:
             raise ValueError(f"{server_service_name} runs on a single thread/process")
