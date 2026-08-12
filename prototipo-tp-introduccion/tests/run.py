@@ -1,7 +1,7 @@
 import sys
-from tests import OutputFiles, SigtermHandling, Concurrency, Json, ForcedExit
+from tests import OutputFiles, SigtermHandling, Concurrency, Json, ForcedExit, ShortReadWrite
 
-TEST_CASES = [Json, ForcedExit, OutputFiles, SigtermHandling, Concurrency]
+TEST_CASES = [Json, ForcedExit, OutputFiles, SigtermHandling, Concurrency, ShortReadWrite]
 MESSAGE_PADDING = 32
 
 
