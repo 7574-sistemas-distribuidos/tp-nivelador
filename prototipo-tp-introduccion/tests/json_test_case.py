@@ -1,6 +1,9 @@
 from .test_case import TestCase
 from utils import shell_cmd
 
+GOLANG_FILES_PATH = "./services/client"
+PYTHON_FILES_PATH = "./services/server"
+
 
 class Json(TestCase):
     title = "json import"
@@ -9,12 +12,13 @@ class Json(TestCase):
     @staticmethod
     def test() -> None:
         server_files = shell_cmd.search_files_containing(
-            "./services/server", "import json"
+            PYTHON_FILES_PATH, "import json"
         )
         if len(server_files) > 0:
             raise LookupError(f"json is imported in the server")
+
         client_files = shell_cmd.search_files_containing(
-            "./services/client", "encoding/json"
+            GOLANG_FILES_PATH, "encoding/json"
         )
         if len(client_files) > 0:
             raise LookupError(f"json is imported in the client")
