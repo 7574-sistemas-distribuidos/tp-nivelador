@@ -17,7 +17,7 @@ def down(docker_compose_path: str | None):
     shell_cmd.run(args, capture=False)
 
 
-def stop(service_names: list[str], grace_period_seconds=10):
+def stop(service_names: list[str], grace_period_seconds=5):
     shell_cmd.run(
         ["docker", "stop", "-t", str(grace_period_seconds), *service_names],
         capture=False,
@@ -36,7 +36,7 @@ def await_containers(service_names: list[str]) -> int:
     return zero_exit_code_count
 
 
-def get_container_pids(service_name: str):
+def _get_container_stats(service_name: str):
     result = shell_cmd.run(
         [
             "docker",
@@ -49,6 +49,15 @@ def get_container_pids(service_name: str):
         ],
         capture=True,
     )
-    output = json.loads(result.stdout.decode("utf-8"))
+    return json.loads(result.stdout.decode("utf-8"))
 
+
+def get_container_pids(service_name: str):
+    output = _get_container_stats(service_name)
     return int(output["PIDs"])
+
+
+def get_container_net_io(service_name: str):
+    output = _get_container_stats(service_name)
+    [net_recv, net_sent] = output["NetIO"].split("/")
+    return net_recv.strip(), net_sent.strip()
