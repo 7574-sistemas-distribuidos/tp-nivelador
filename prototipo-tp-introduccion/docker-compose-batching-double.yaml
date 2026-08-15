@@ -1,0 +1,38 @@
+services:
+  packets:
+    build:
+      context: ./tests/services/packets
+      dockerfile: Dockerfile
+    container_name: packets
+    network_mode: service:server
+    environment:
+      - PYTHONUNBUFFERED=1
+  
+  server:
+    build:
+      context: ./services/server
+      dockerfile: Dockerfile
+    container_name: server
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AGENCY_QUORUM_MIN=1
+      - SERVER_HOST=server
+      - SERVER_PORT=5678
+
+  client_0:
+    build:
+      context: ./services/client
+      dockerfile: Dockerfile
+    container_name: client_0
+    depends_on:
+      - packets
+    environment:
+      - AGENCY_ID=0
+      - SERVER_HOST=server
+      - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-3.csv
+      - OUTPUT_FILE=/output/output-3.csv
+      - BATCH_SIZE=32
+    volumes:
+      - ./input:/input
+      - ./output:/output
