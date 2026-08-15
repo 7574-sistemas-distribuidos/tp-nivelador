@@ -5,16 +5,18 @@ from . import shell_cmd
 
 def up(docker_compose_path: str | None):
     args = ["make", "up"]
+    env = {}
     if docker_compose_path:
-        args.append(f"FILE={docker_compose_path}")
-    shell_cmd.run(args, capture=False)
+        env["DOCKER_FILE_PATH"] = docker_compose_path
+    shell_cmd.run(args, capture=False, env=env)
 
 
 def down(docker_compose_path: str | None):
     args = ["make", "down"]
+    env = {}
     if docker_compose_path:
-        args.append(f"FILE={docker_compose_path}")
-    shell_cmd.run(args, capture=False)
+        env["DOCKER_FILE_PATH"] = docker_compose_path
+    shell_cmd.run(args, capture=False, env=env)
 
 
 def stop(service_names: list[str], grace_period_seconds=5):
