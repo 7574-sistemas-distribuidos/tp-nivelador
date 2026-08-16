@@ -1,7 +1,23 @@
 import sys
-from tests import OutputFiles, SigtermHandling, Concurrency, Json, ForcedExit, Batching
+from tests import (
+    OutputFiles,
+    SigtermHandling,
+    Concurrency,
+    Json,
+    ForcedExit,
+    Batching,
+    MemoryProfile,
+)
 
-TEST_CASES = [Json, ForcedExit, OutputFiles, Batching, Concurrency, SigtermHandling]
+TEST_CASES = [
+    Json,
+    ForcedExit,
+    OutputFiles,
+    Batching,
+    Concurrency,
+    SigtermHandling,
+    MemoryProfile,
+]
 MESSAGE_PADDING = 32
 
 
