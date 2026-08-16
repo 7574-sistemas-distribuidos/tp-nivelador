@@ -42,9 +42,7 @@ class MemoryProfile(TestCase):
             services, "client"
         )[0]
 
-        print("Setting up")
         MemoryProfile._create_agency_file(MEDIUM_FILE_ITEM_COUNT)
-        print("Setup up")
 
         profile1 = MemoryProfile.with_docker_run(
             DOCKER_COMPOSE_PATH,
@@ -57,11 +55,7 @@ class MemoryProfile(TestCase):
             lambda: MemoryProfile._get_peak_memory_in_bytes(client_service_name),
         )
 
-        print("Cleaning up")
         MemoryProfile._remove_agency_file()
-
-        print(profile1)
-        print(profile2)
 
         if profile2 - profile1 > PROFILE_DIFF_THRESHOLD_BYTES:
             raise ValueError(
