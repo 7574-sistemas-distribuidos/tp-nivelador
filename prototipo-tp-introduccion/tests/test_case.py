@@ -7,10 +7,10 @@ class TestCase:
     error_hint: str = ""
 
     @staticmethod
-    def with_docker_run(docker_compose_path: str, test_callback) -> None:
+    def with_docker_run(docker_compose_path: str, test_callback):
         try:
             docker.up(docker_compose_path)
-            test_callback()
+            return test_callback()
         finally:
             docker.down(docker_compose_path)
 

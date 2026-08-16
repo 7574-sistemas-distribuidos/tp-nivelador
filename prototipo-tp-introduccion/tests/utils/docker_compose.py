@@ -1,4 +1,5 @@
 import yaml
+from . import shell_cmd
 
 
 def read(docker_compose_path):
@@ -23,3 +24,20 @@ def find_environment_variable(service, target_environment_variable) -> str:
             return value
 
     raise LookupError(f"Environment variable not found {target_environment_variable}")
+
+
+def get_container_last_logs(docker_compose_path: str, service_name: str, tail=10):
+    result = shell_cmd.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            docker_compose_path,
+            "logs",
+            service_name,
+            "--tail",
+            str(tail),
+        ],
+        capture=True,
+    )
+    return result.stdout.decode("utf-8")
