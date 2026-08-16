@@ -3,6 +3,7 @@ from .test_case import TestCase
 
 DOCKER_COMPOSE_PATH = "docker-compose-no-agency-quorum.yaml"
 
+
 class Concurrency(TestCase):
     title = "spawned processes/threads"
     error_hint = "The server should spawn and orchestrate threads or processes to handle clients requests"

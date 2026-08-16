@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/logger"
-	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/safe_socket"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
@@ -70,12 +69,13 @@ func (client *Client) Run() error {
 
 		clientMessage := client.config.AgencyId
 
-		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
+		if _, err := client.conn.Write([]byte(clientMessage)); err != nil {
 			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
 
-		responseBuffer, err := safe_socket.RecvAll(client.conn, ECHO_CLIENT_BUFFER_SIZE)
+		responseBuffer := make([]byte, ECHO_CLIENT_BUFFER_SIZE)
+		_, err := client.conn.Read(responseBuffer)
 		if err != nil {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err
