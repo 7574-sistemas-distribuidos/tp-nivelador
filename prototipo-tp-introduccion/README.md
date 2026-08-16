@@ -27,7 +27,7 @@ Todos los cambios a archivos por fuera de la carpeta `client/src` o `server/src`
 
 Instalar Docker Engine siguiendo la [guía de instalación oficial](https://docs.docker.com/engine/install/) para el sistema operativo y distribución correspondiente, ej.: Paso a paso para [Ubuntu](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository). En Windows y MacOs Docker Engine se distribuye dentro de la herramienta comercial Docker Desktop.
 
-Luego, iniciar los contenedores del trabajo con `make up`. Tras la descarga de las imágenes base y la construcción de las imágenes derivadas, ver los logs de ejecución usando `make logs`:
+Luego, iniciar los contenedores del trabajo con `make up` y ver los logs de ejecución usando `make logs`:
 
 ```bash
 client_0  | 2026/07/18 01:19:28 INFO action=connect-to-server result=in-progress
@@ -48,13 +48,13 @@ client_0 exited with code 0
 
 #### Comandos básicos del Makefile
 
-`make up` : Inicia los contenedores del sistema y comienza a seguir los logs de todos ellos en un solo flujo de salida.
+`make up` :  Descarga de las imágenes base de los servicios definidos, construye imágenes derivadas e inicia los contenedores del sistema.
 
 `make down`: Detiene los contenedores y libera los recursos asociados.
 
 `make logs`: Realiza un seguimiento de los logs de todos los contenedores en un solo flujo de salida.
 
-`make test`: Inicia los contenedores del sistema, espera a que los clientes finalicen, realiza distintas pruebas para validar la implementación y detiene los contenederes.
+`make test`: Realiza distintas pruebas de caja negra para garantizar que la solución cumpla con un estándar mínimo de calidad.
 
 ### Ejercicio N°1
 
@@ -103,7 +103,7 @@ La cantidad de registros de apuesta dentro de cada _batch_ debe ser configurable
 
 Modificar el servidor para que permita aceptar conexiones y procesar mensajes concurrentemente. Deberá esperar a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
 
-En caso de que el alumno implemente el servidor en Python utilizando _multithreading_, deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
+No se permite utilizar futures/asyncio. En caso de que el alumno utilice _multithreading_, deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
 
 ### Ejercicio N°7:
 
