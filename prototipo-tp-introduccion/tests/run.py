@@ -6,7 +6,6 @@ MESSAGE_PADDING = 32
 
 
 def main():
-    exit_code = 0
     for test_case in TEST_CASES:
         print(f"Testing {test_case.title.ljust(MESSAGE_PADDING, ".")}", end="")
         try:
@@ -16,8 +15,8 @@ def main():
             print("ERROR")
             print(f"{e}", file=sys.stderr, end="\n\n")
             print(f"HINT: {test_case.error_hint}", file=sys.stderr, end="\n\n")
-            exit_code = 1
-    return exit_code
+            return 1
+    return 0
 
 
 if __name__ == "__main__":

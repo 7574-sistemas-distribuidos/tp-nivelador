@@ -1,6 +1,5 @@
 import socket
 import logger
-import safe_socket
 
 _ECHO_SERVER_MESSAGE_SIZE = 1024
 
@@ -16,9 +15,7 @@ class Server:
         try:
             logger.info(action, logger.LogResult.in_progress)
             while True:
-                client_message = safe_socket.recv_all(
-                    client_socket, _ECHO_SERVER_MESSAGE_SIZE
-                )
+                client_message = client_socket.recv(_ECHO_SERVER_MESSAGE_SIZE)
                 if not client_message:
                     logger.info(
                         action,
@@ -28,7 +25,7 @@ class Server:
                     )
                     return
                 message_amount += 1
-                safe_socket.send_all(client_socket, client_message)
+                client_socket.send(client_message)
         except Exception as e:
             logger.error(
                 action, logger.LogResult.fail, "messages-amount", message_amount
