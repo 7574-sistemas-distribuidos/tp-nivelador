@@ -1,4 +1,4 @@
-package gotests
+package safe_socket
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/safe_socket"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,8 +26,8 @@ var cases = []testCase{
 func TestShortReadWrite(
 	t *testing.T,
 ) {
-	testShortRead(t, safe_socket.RecvAll)
-	testShortWrite(t, safe_socket.SendAll)
+	testShortRead(t, RecvAll)
+	testShortWrite(t, SendAll)
 }
 
 func testShortRead(t *testing.T,
