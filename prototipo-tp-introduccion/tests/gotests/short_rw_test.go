@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/safe_socket"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,29 +26,21 @@ var cases = []testCase{
 // Helper function to run test suite
 func TestShortReadWrite(
 	t *testing.T,
-	read_all func(
-		r io.Reader,
-		n uint64,
-	) ([]byte, error),
-	write_all func(
-		w io.Writer,
-		b []byte,
-	) error,
 ) {
-	testShortRead(t, read_all)
-	testShortWrite(t, write_all)
+	testShortRead(t, safe_socket.RecvAll)
+	testShortWrite(t, safe_socket.SendAll)
 }
 
 func testShortRead(t *testing.T,
 	read_all func(
 		r io.Reader,
-		n uint64,
+		n int,
 	) ([]byte, error),
 ) {
 	t.Run("Short Read", func(t *testing.T) {
 		for _, tc := range cases {
 			r := NewShortReader(tc.data, tc.maxChunkSize)
-			data, err := read_all(r, uint64(len(tc.data)))
+			data, err := read_all(r, len(tc.data))
 			require.NoError(t, err, "read_all returned an error")
 			require.Equal(t, len(tc.data), len(data), "returned data should be the same length")
 			require.Equal(t, tc.data, data, "Returned data should be equal match")
