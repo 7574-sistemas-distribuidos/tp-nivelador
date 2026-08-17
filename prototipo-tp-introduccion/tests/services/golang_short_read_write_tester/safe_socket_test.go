@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"slices"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
@@ -40,9 +39,15 @@ func testShortRead(t *testing.T,
 		for _, tc := range cases {
 			r := NewShortReader(tc.data, tc.maxChunkSize)
 			data, err := read_all(r, len(tc.data))
-			require.NoError(t, err, "read_all returned an error")
-			require.Equal(t, len(tc.data), len(data), "returned data should be the same length")
-			require.Equal(t, tc.data, data, "Returned data should be equal match")
+			if err != nil {
+				t.Fatalf("read_all returned an error: %s", err)
+			}
+			if len(tc.data) != len(data) {
+				t.Fatalf("returned data should be the same length. Expected %d, got %d", len(tc.data), len(data))
+			}
+			if slices.Equal(tc.data, data) {
+				t.Fatalf("returned data should be equal match. Expected %v, got %v", tc.data, data)
+			}
 		}
 	})
 }
@@ -57,9 +62,15 @@ func testShortWrite(t *testing.T,
 		for _, tc := range cases {
 			w := NewShortWriter(tc.maxChunkSize)
 			err := write_all(w, tc.data)
-			require.NoError(t, err, "write_all returned an error")
-			require.Equal(t, len(tc.data), len(w.data), "returned data should be the same length")
-			require.Equal(t, tc.data, w.data, "Returned data should be equal match")
+			if err != nil {
+				t.Fatalf("write_all returned an error: %s", err)
+			}
+			if len(tc.data) != len(w.data) {
+				t.Fatalf("written data should be the same length. Expected %d, got %d", len(tc.data), len(w.data))
+			}
+			if slices.Equal(tc.data, w.data) {
+				t.Fatalf("written data should be equal match. Expected %v, got %v", tc.data, w.data)
+			}
 		}
 	})
 }
