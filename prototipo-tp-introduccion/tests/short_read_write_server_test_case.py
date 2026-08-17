@@ -12,24 +12,30 @@ class ChunkedSocket(socket.socket):
         self.max_chunk_size = max_chunk_size
 
     def recv(self, bufsize: int, _flags: int = 0) -> bytes:
-        data_len_to_recv = random.randrange(0, min(bufsize, self.max_chunk_size))
+        data_len_to_recv = (
+            random.randrange(0, min(bufsize, self.max_chunk_size))
+            if self.max_chunk_size != 1
+            else 1
+        )
         data_to_recv = self.recv_buffer[:data_len_to_recv]
         self.recv_buffer = self.recv_buffer[data_len_to_recv:]
         return data_to_recv
 
     def send(self, data, _flags: int = 0) -> int:
-        data_len_to_send = random.randrange(0, self.max_chunk_size)
+        data_len_to_send = (
+            random.randrange(0, self.max_chunk_size) if self.max_chunk_size != 1 else 1
+        )
         data_to_send = memoryview(data)[:data_len_to_send]
         self.send_buffer += bytes(data_to_send)
         return len(data_to_send)
 
 
-class ShortReadWrite(TestCase):
-    title = "short read/write"
-    error_hint = "I/O doesn't usually guarantee a full read/write in a single call"
+class ServerShortReadWrite(TestCase):
+    title = "server short read/write"
+    error_hint = "I/O doesn't guarantee a full read/write in a single call"
 
     @staticmethod
-    def _test_python_recv_all_case(bytes_to_recv: bytes, max_chunk_size: int):
+    def _test_recv_all_case(bytes_to_recv: bytes, max_chunk_size: int):
         chunked_socket = ChunkedSocket(
             recv_buffer=bytes_to_recv, max_chunk_size=max_chunk_size
         )
@@ -40,14 +46,14 @@ class ShortReadWrite(TestCase):
             )
 
     @staticmethod
-    def _test_python_recv_all():
-        ShortReadWrite._test_python_recv_all_case(b"hello-world", 4)
-        ShortReadWrite._test_python_recv_all_case(b"Robert Smith,50000000,7574", 8)
-        ShortReadWrite._test_python_recv_all_case(b"ack", 1)
-        ShortReadWrite._test_python_recv_all_case(b"a" * 2048, 32)
+    def _test_recv_all():
+        ServerShortReadWrite._test_recv_all_case(b"hello-world", 4)
+        ServerShortReadWrite._test_recv_all_case(b"Robert Smith,50000000,7574", 8)
+        ServerShortReadWrite._test_recv_all_case(b"ack", 1)
+        ServerShortReadWrite._test_recv_all_case(b"a" * 2048, 32)
 
     @staticmethod
-    def _test_python_send_all_case(bytes_to_send: bytes, max_chunk_size: int):
+    def _test_send_all_case(bytes_to_send: bytes, max_chunk_size: int):
         chunked_socket = ChunkedSocket(max_chunk_size=max_chunk_size)
         send_all(chunked_socket, bytes_to_send)
         sent_bytes = chunked_socket.send_buffer
@@ -57,13 +63,13 @@ class ShortReadWrite(TestCase):
             )
 
     @staticmethod
-    def _test_python_send_all():
-        ShortReadWrite._test_python_send_all_case(b"hello-world", 4)
-        ShortReadWrite._test_python_send_all_case(b"Robert Smith,50000000,7574", 8)
-        ShortReadWrite._test_python_send_all_case(b"ack", 1)
-        ShortReadWrite._test_python_send_all_case(b"a" * 2048, 32)
+    def _test_send_all():
+        ServerShortReadWrite._test_send_all_case(b"hello-world", 4)
+        ServerShortReadWrite._test_send_all_case(b"Robert Smith,50000000,7574", 8)
+        ServerShortReadWrite._test_send_all_case(b"ack", 1)
+        ServerShortReadWrite._test_send_all_case(b"a" * 2048, 32)
 
     @staticmethod
     def test() -> None:
-        ShortReadWrite._test_python_recv_all()
-        ShortReadWrite._test_python_send_all()
+        ServerShortReadWrite._test_recv_all()
+        ServerShortReadWrite._test_send_all()
