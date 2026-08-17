@@ -5,16 +5,18 @@ from . import shell_cmd
 
 def up(docker_compose_path: str | None):
     args = ["make", "up"]
+    env = {}
     if docker_compose_path:
-        args.append(f"FILE={docker_compose_path}")
-    shell_cmd.run(args, capture=False)
+        env["DOCKER_FILE_PATH"] = docker_compose_path
+    shell_cmd.run(args, capture=False, env=env)
 
 
 def down(docker_compose_path: str | None):
     args = ["make", "down"]
+    env = {}
     if docker_compose_path:
-        args.append(f"FILE={docker_compose_path}")
-    shell_cmd.run(args, capture=False)
+        env["DOCKER_FILE_PATH"] = docker_compose_path
+    shell_cmd.run(args, capture=False, env=env)
 
 
 def stop(service_names: list[str], grace_period_seconds=5):
@@ -34,6 +36,17 @@ def await_containers(service_names: list[str]) -> int:
             zero_exit_code_count += 1
 
     return zero_exit_code_count
+
+
+def _get_file_contents(service_name: str, filepath: str) -> str:
+    result = shell_cmd.run(
+        ["docker", "exec", service_name, "sh", "-c", f"cat {filepath}"], capture=True
+    )
+    return result.stdout
+
+
+def get_container_peak_memory_in_bytes(service_name: str) -> int:
+    return int(_get_file_contents(service_name, filepath="/sys/fs/cgroup/memory.peak"))
 
 
 def _get_container_stats(service_name: str):
