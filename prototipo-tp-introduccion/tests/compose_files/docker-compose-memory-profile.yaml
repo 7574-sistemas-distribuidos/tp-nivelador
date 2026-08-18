@@ -1,7 +1,7 @@
 services:
   server:
     build:
-      context: ./services/server
+      context: ../../services/server
       dockerfile: Dockerfile
     container_name: server
     environment:
@@ -12,7 +12,7 @@ services:
 
   client_0:
     build:
-      context: ./services/client
+      context: ../../services/client
       dockerfile: Dockerfile
     container_name: client_0
     depends_on:
@@ -25,5 +25,5 @@ services:
       - OUTPUT_FILE=/output/output-0.csv
       - BATCH_SIZE=8
     volumes:
-      - ./input:/input
-      - ./output:/output
+      - ../../input:/input
+      - ../../output:/output

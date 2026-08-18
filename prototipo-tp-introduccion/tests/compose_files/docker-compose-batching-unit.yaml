@@ -1,7 +1,7 @@
 services:
   packets:
     build:
-      context: ./tests/services/packets
+      context: ../services/packets
       dockerfile: Dockerfile
     container_name: packets
     network_mode: service:server
@@ -10,7 +10,7 @@ services:
 
   server:
     build:
-      context: ./services/server
+      context: ../../services/server
       dockerfile: Dockerfile
     container_name: server
     environment:
@@ -21,7 +21,7 @@ services:
 
   client_0:
     build:
-      context: ./services/client
+      context: ../../services/client
       dockerfile: Dockerfile
     container_name: client_0
     depends_on:
@@ -34,5 +34,5 @@ services:
       - OUTPUT_FILE=/output/output-3.csv
       - BATCH_SIZE=1
     volumes:
-      - ./input:/input
-      - ./output:/output
+      - ../../input:/input
+      - ../../output:/output

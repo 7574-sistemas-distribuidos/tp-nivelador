@@ -1,0 +1,48 @@
+services:
+  server:
+    build:
+      context: ../../services/server
+      dockerfile: Dockerfile
+    container_name: server
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AGENCY_QUORUM_MIN=3
+      - SERVER_HOST=server
+      - SERVER_PORT=5678
+
+  client_0:
+    build:
+      context: ../../services/client
+      dockerfile: Dockerfile
+    container_name: client_0
+    depends_on:
+      - server
+    environment:
+      - AGENCY_ID=0
+      - SERVER_HOST=server
+      - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-0.csv
+      - OUTPUT_FILE=/output/output-0.csv
+      - BATCH_SIZE=8
+    volumes:
+      - ../../input:/input
+      - ../../output:/output
+
+  client_1:
+    build:
+      context: ../../services/client
+      dockerfile: Dockerfile
+    container_name: client_1
+    depends_on:
+      - server
+    environment:
+      - AGENCY_ID=1
+      - SERVER_HOST=server
+      - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-1.csv
+      - OUTPUT_FILE=/output/output-1.csv
+      - BATCH_SIZE=8
+    volumes:
+      - ../../input:/input
+      - ../../output:/output
+      
