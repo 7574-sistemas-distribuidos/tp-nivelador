@@ -4,7 +4,7 @@ from time import sleep
 from .test_case import TestCase
 from utils import shell_cmd, agency_file_generator
 
-DOCKER_COMPOSE_PATH = "docker-compose-memory-profile.yaml"
+DOCKER_COMPOSE_PATH = "./tests/compose_files/docker-compose-memory-profile.yaml"
 
 INPUT_FILE_PATH = "input/test-data.csv"
 MEDIUM_FILE_ITEM_COUNT = 10000

@@ -2,9 +2,9 @@ import re
 from .utils import docker, docker_compose
 from .test_case import TestCase
 
-DOCKER_COMPOSE_PATH_UNIT = "./docker-compose-batching-unit.yaml"
-DOCKER_COMPOSE_PATH_BASE = "./docker-compose-batching-base.yaml"
-DOCKER_COMPOSE_PATH_DOUBLE = "./docker-compose-batching-double.yaml"
+DOCKER_COMPOSE_PATH_UNIT = "./tests/compose_files/docker-compose-batching-unit.yaml"
+DOCKER_COMPOSE_PATH_BASE = "./tests/compose_files/docker-compose-batching-base.yaml"
+DOCKER_COMPOSE_PATH_DOUBLE = "./tests/compose_files/docker-compose-batching-double.yaml"
 
 EXPECTED_PACKET_RATIO_MIN = 1.5
 EXPECTED_PACKET_RATIO_MAX = 2.2
