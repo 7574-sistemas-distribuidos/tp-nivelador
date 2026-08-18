@@ -45,7 +45,7 @@ func testShortRead(t *testing.T,
 			if len(tc.data) != len(data) {
 				t.Fatalf("returned data should be the same length. Expected %d, got %d", len(tc.data), len(data))
 			}
-			if slices.Equal(tc.data, data) {
+			if !slices.Equal(tc.data, data) {
 				t.Fatalf("returned data should be equal match. Expected %v, got %v", tc.data, data)
 			}
 		}
@@ -68,7 +68,7 @@ func testShortWrite(t *testing.T,
 			if len(tc.data) != len(w.data) {
 				t.Fatalf("written data should be the same length. Expected %d, got %d", len(tc.data), len(w.data))
 			}
-			if slices.Equal(tc.data, w.data) {
+			if !slices.Equal(tc.data, w.data) {
 				t.Fatalf("written data should be equal match. Expected %v, got %v", tc.data, w.data)
 			}
 		}
