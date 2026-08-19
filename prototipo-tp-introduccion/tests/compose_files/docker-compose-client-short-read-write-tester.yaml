@@ -1,0 +1,7 @@
+services:
+  client_short_read_write_tester:
+    build:
+      context: ../..
+      dockerfile: ./tests/services/client_short_read_write_tester/Dockerfile
+    container_name: client_short_read_write_tester
+
