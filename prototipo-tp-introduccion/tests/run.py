@@ -7,16 +7,20 @@ from tests import (
     ForcedExit,
     Batching,
     MemoryProfile,
+    ServerShortReadWrite,
+    ClientShortReadWrite,
 )
 
 TEST_CASES = [
     Json,
     ForcedExit,
     OutputFiles,
-    Batching,
     Concurrency,
-    SigtermHandling,
     MemoryProfile,
+    SigtermHandling,
+    ClientShortReadWrite,
+    ServerShortReadWrite,
+    Batching,
 ]
 MESSAGE_PADDING = 32
 

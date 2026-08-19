@@ -76,12 +76,17 @@ El archivo de salida deberá persistirse por fuera del contenedor del cliente y 
 
 ## Parte 2: Repaso de Comunicaciones
 
-### Ejercicio N°4
+### Ejercicio Nº4
+
+Mejorar la implementación de las funciones `recv_all` y `send_all` de cliente y servidor para que se contemplen posibles errores en la comunicación y se eviten los escenarios conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
+En Python utilizar solamente los métodos `send`y `recv` de la biblioteca `socket.socket`. En Golang utilizar solamente los métodos `Write` y`Read` de `net.Conn`.
+
+### Ejercicio N°5
 
 Implementar un protocolo de comunicación entre cliente y servidor en donde se maneje el envío y la recepción de los los datos de la agencia y las apuestas. Se espera que contemple:
 - Correcta serialización y deserialización de los datos.
 - Correcta separación de responsabilidades entre modelo de dominio y capa de comunicación.
-- Correcto empleo de sockets, incluyendo manejo de errores y evitando los fenómenos conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
+- Correcto empleo de sockets, incluyendo manejo de errores y los escenarios de short read o short write ya descritos. 
 
 El servidor emulará la _central de Lotería Nacional_. Deberá recibir los campos de cada apuesta desde los clientes y almacenar la información mediante el método `store_bet` de la clase `Lottery` para el futuro control de ganadores.
 
@@ -91,7 +96,7 @@ Finalmente el cliente deberá persistir los ganadores en el archivo `OUTPUT_FILE
 
 Eliminar las constantes `ECHO_CLIENT_*`/`ECHO_SERVER_*`. El grueso de la sincronización entre cliente y servidor debe estar dada por el intercambio de mensajes, no por la espera de un lapso de tiempo prefijado.
 
-### Ejercicio N°5
+### Ejercicio N°6
 
 Modificar los clientes para que envíen varias apuestas dentro de un mismo mensaje. Esta modalidad es conocida como procesamiento por _chunks_ , _batchs_ o _lotes_ y permite acortar tiempos de transmisión y procesamiento a lo largo de toda la ejecución. Por su parte, el servidor deberá poder comprender los nuevos mensajes y responder con éxito solamente si todas las apuestas del _batch_ fueron procesadas correctamente.
 
@@ -99,13 +104,13 @@ La cantidad de registros de apuesta dentro de cada _batch_ debe ser configurable
 
 ## Parte 3: Repaso de Concurrencia
 
-### Ejercicio N°6:
+### Ejercicio N°7:
 
 Modificar el servidor para que permita aceptar conexiones y procesar mensajes concurrentemente. Deberá esperar a la notificación de un mínimo de agencias para realizar el sorteo. Este mínimo se definirá mediante la variable de entorno `AGENCY_QUORUM_MIN`. No es correcto realizar un broadcast de todos los ganadores hacia todas las agencias, se espera que los ganadores en `OUTPUT_FILE` estén presentes en `INPUT_FILE`.
 
 No se permite utilizar futures/asyncio. En caso de que el alumno utilice _multithreading_, deberán tenerse en cuenta las [limitaciones propias del lenguaje](https://wiki.python.org/moin/GlobalInterpreterLock).
 
-### Ejercicio N°7:
+### Ejercicio N°8:
 
 Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la signal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los _file descriptors_ (entre los que se encuentran archivos, sockets, ipcs, threads y procesos) deben cerrarse correctamente antes que el hilo de la aplicación principal finalice (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
 
