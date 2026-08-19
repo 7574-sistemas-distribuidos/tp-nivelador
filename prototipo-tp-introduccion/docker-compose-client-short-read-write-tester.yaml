@@ -1,7 +1,0 @@
-services:
-  golang_short_read_write_tester:
-    build:
-      context: .
-      dockerfile: ./tests/services/golang_short_read_write_tester/Dockerfile
-    container_name: golang_short_read_write_tester
-

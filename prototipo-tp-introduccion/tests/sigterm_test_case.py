@@ -1,7 +1,7 @@
 from .utils import docker, docker_compose
 from .test_case import TestCase
 
-DOCKER_COMPOSE_PATH = "docker-compose-no-agency-quorum.yaml"
+DOCKER_COMPOSE_PATH = "./tests/compose_files/docker-compose-no-agency-quorum.yaml"
 
 
 class SigtermHandling(TestCase):

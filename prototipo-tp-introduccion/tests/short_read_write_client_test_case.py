@@ -1,7 +1,9 @@
-from .utils import docker, docker_compose
+from .utils import docker
 from .test_case import TestCase
 
-DOCKER_COMPOSE_PATH = "docker-compose-client-short-read-write-tester.yaml"
+DOCKER_COMPOSE_PATH = (
+    "./tests/compose_files/docker-compose-client-short-read-write-tester.yaml"
+)
 
 
 class ClientShortReadWrite(TestCase):
@@ -10,8 +12,8 @@ class ClientShortReadWrite(TestCase):
 
     @staticmethod
     def _test() -> None:
-        golang_short_read_write_tester = "golang_short_read_write_tester"
-        zero_exit_code_count = docker.await_containers([golang_short_read_write_tester])
+        client_short_read_write_tester = "client_short_read_write_tester"
+        zero_exit_code_count = docker.await_containers([client_short_read_write_tester])
         if zero_exit_code_count != 1:
             raise ValueError(f"The client short read write tests failed")
 
