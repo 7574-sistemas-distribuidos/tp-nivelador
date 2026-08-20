@@ -10,7 +10,7 @@ El cliente y servidor fueron desarrollados en Golang y Python para mostrar cómo
 
 ## Condiciones de Entrega
 
-Se espera que los alumnos realicen un _fork_ del presente repositorio y que trabajen sobre el mismo en sucesivos commits siguiendo los ejercicios listados a continuación. Además deberán detallar en el archivo `INFORME.md` los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado y los mecanismos para sincronizar la ejecución concurrente.
+Se espera que los alumnos realicen un _fork_ del presente repositorio y que trabajen sobre el mismo en sucesivos commits siguiendo los ejercicios listados a continuación. Aquellos incisos marcados como __Opcional__ no afectan la calificación, pero se recomienda abordarlos al terminar con el resto del trabajo para ejercitar buenas prácticas de programación. Además deberán detallar en el archivo `INFORME.md` los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado y los mecanismos para sincronizar la ejecución concurrente.
 
 La entrega consiste en el enlace al último commit que hayan realizado, por ejemplo:
 [https://github.com/7574-sistemas-distribuidos/tp-nivelador/commit/6a1f32de93d6927b0a2279a6e4fa85c34f4aec14](https://github.com/7574-sistemas-distribuidos/tp-nivelador/commit/6a1f32de93d6927b0a2279a6e4fa85c34f4aec14)
