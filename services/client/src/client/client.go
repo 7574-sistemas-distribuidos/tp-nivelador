@@ -4,8 +4,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/logger"
-	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/safe_socket"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3

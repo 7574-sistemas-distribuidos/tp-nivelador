@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 
-	client "github.com/7574-sistemas-distribuidos/tp-introduccion/src/client"
-	"github.com/7574-sistemas-distribuidos/tp-introduccion/src/logger"
+	client "github.com/7574-sistemas-distribuidos/tp-nivelador/src/client"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 )
 
 func loadConfig() (client.ClientConfig, error) {
