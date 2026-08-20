@@ -1,6 +1,4 @@
-# TP Introductorio: Docker, Comunicaciones y Concurrencia
-
----
+# TP Nivelador: Docker, Comunicaciones y Concurrencia
 
 ## Introducción
 
@@ -15,7 +13,7 @@ El cliente y servidor fueron desarrollados en Golang y Python para mostrar cómo
 Se espera que los alumnos realicen un _fork_ del presente repositorio y que trabajen sobre el mismo en sucesivos commits siguiendo los ejercicios listados a continuación. Además deberán detallar en el archivo `INFORME.md` los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado y los mecanismos para sincronizar la ejecución concurrente.
 
 La entrega consiste en el enlace al último commit que hayan realizado, por ejemplo:
-`https://github.com/7574-sistemas-distribuidos/tp-coordinacion/commit/6de10feffc3464194fc87536266f70ae1cb73fac`
+[https://github.com/7574-sistemas-distribuidos/tp-nivelador/commit/6a1f32de93d6927b0a2279a6e4fa85c34f4aec14](https://github.com/7574-sistemas-distribuidos/tp-nivelador/commit/6a1f32de93d6927b0a2279a6e4fa85c34f4aec14)
 
 Se proveen pruebas automáticas de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas. En caso de existir discrepancias, estas deben ser discutidas con y aprobadas por los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Se pide a los alumnos leer atentamente el enunciado y **tener en cuenta** los criterios de corrección informados [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
 
@@ -48,19 +46,21 @@ client_0 exited with code 0
 
 #### Comandos básicos del Makefile
 
-`make up` :  Descarga de las imágenes base de los servicios definidos, construye imágenes derivadas e inicia los contenedores del sistema.
+`make up` :  Descarga las imágenes base de los servicios definidos, construye imágenes derivadas e inicia los contenedores del sistema.
 
 `make down`: Detiene los contenedores y libera los recursos asociados.
 
 `make logs`: Realiza un seguimiento de los logs de todos los contenedores en un solo flujo de salida.
 
-`make test`: Realiza distintas pruebas de caja negra para garantizar que la solución cumpla con un estándar mínimo de calidad.
+`make test`: Ejecuta distintas pruebas de caja negra para garantizar que la solución cumpla con un estándar mínimo de calidad.
 
 ### Ejercicio N°1
 
 Definir en el archivo `docker-compose.yaml` cinco contenedores de clientes, basados en el mismo archivo `Dockerfile`. Editar sus nombres y la variable de entorno `AGENCY_ID` para poder diferenciar las entradas de los logs. Finalmente reiniciar los contenedores ejecutando `make down`, seguido de `make up`.
 
 El echo server atiende a los clientes de forma serial (no concurrente), pero aún así las entradas de los logs pueden mezclarse debido al órden en el que se escriben en el archivo de salida de Docker.
+
+__Opcional:__ Definir un script simple en bash, Python o Golang que reciba como parámetro la cantidad de clientes a configurar y genere automáticamente un nuevo archivo `docker-compose.yaml`.
 
 ### Ejercicio N°2
 
@@ -70,7 +70,7 @@ __Opcional:__ Crear un script de bash que permita verificar el correcto funciona
 
 ### Ejercicio N°3
 
-Modificar el código del cliente para que se lea línea por línea el archivo `INPUT_FILE` y se envíen al servidor en un mensaje individual. Las respuestas del servidor deben persistirse en el archivo `OUTPUT_FILE`.
+Modificar el código del cliente para que se lea línea por línea el archivo `INPUT_FILE` y se envíen al servidor en mensajes individuales la información de cada apuesta. Las respuestas del servidor deben persistirse en el archivo `OUTPUT_FILE`.
 
 El archivo de salida deberá persistirse por fuera del contenedor del cliente y ser accesible desde el equipo anfitrión en el directorio `output`. Cualquier cambio en los archivos de entrada entre ejecuciones no debe obligar a reconstruír la imágen del cliente (hint: `docker volumes`).
 
@@ -78,8 +78,8 @@ El archivo de salida deberá persistirse por fuera del contenedor del cliente y 
 
 ### Ejercicio Nº4
 
-Mejorar la implementación de las funciones `recv_all` y `send_all` de cliente y servidor para que se contemplen posibles errores en la comunicación y se eviten los escenarios conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
-En Python utilizar solamente los métodos `send`y `recv` de la biblioteca `socket.socket`. En Golang utilizar solamente los métodos `Write` y`Read` de `net.Conn`.
+Mejorar la implementación de las funciones `recv_all` y `send_all` de los módulos `safe_socket` en el cliente y el servidor para que se contemplen posibles errores en la comunicación y se eviten los escenarios conocidos como [_short read y short write_](https://cs61.seas.harvard.edu/site/2018/FileDescriptors/).
+En Python utilizar solamente los métodos `send`y `recv` de la biblioteca `socket.socket`. En Golang utilizar solamente los métodos `Write` y`Read` de las interfaces `io.Reader` e `io.Writer`.
 
 ### Ejercicio N°5
 
@@ -112,6 +112,6 @@ No se permite utilizar futures/asyncio. En caso de que el alumno utilice _multit
 
 ### Ejercicio N°8:
 
-Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la signal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los _file descriptors_ (entre los que se encuentran archivos, sockets, ipcs, threads y procesos) deben cerrarse correctamente antes que el hilo de la aplicación principal finalice (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
+Modificar servidor y cliente para que ambos sistemas terminen de forma _graceful_ al recibir la señal SIGTERM. Terminar la aplicación de forma _graceful_ implica que todos los recursos (entre los que se encuentran archivos, sockets, ipcs, threads y procesos) deben cerrarse y limpiarse correctamente antes de que el hilo de la aplicación principal finalice (hint: Verificar que hace el flag `-t` utilizado en el comando `docker compose down`).
 
 Puede adoptarse un enfoque "polite" respecto a no interrumpir la comunicación abruptamente, pero dado que se trata de una señal de terminación, el tiempo de cierre del sistema deberá ser conocido y acotado.
