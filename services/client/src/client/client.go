@@ -14,8 +14,6 @@ import (
 const ConnectionAttemptsMax = 3
 const ConnectionAttempsDelayMs = 200
 
-const EchoClientBufferSize = 512
-
 type Config struct {
 	ServerHost string
 	ServerPort string
@@ -118,7 +116,7 @@ func (client *Client) Run() (err error) {
 			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
-		responseBuffer, err := safe_socket.RecvAll(client.conn, EchoClientBufferSize)
+		responseBuffer, err := safe_socket.RecvAll(client.conn, len(clientMessage))
 
 		if err != nil {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
