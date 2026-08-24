@@ -10,9 +10,12 @@ class TestCase:
     def with_docker_run(docker_compose_path: str, test_callback):
         try:
             docker.up(docker_compose_path)
-            return test_callback()
-        finally:
+            result = test_callback()
             docker.down(docker_compose_path)
+            return result
+        except Exception as e:
+            docker.down(docker_compose_path)
+            raise e
 
     @staticmethod
     def await_net_io_stop(service_name: str, pooling_await_seconds=1):

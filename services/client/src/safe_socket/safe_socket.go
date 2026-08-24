@@ -25,5 +25,5 @@ func RecvAll(socket io.Reader, size int) ([]byte, error) {
 		}
 		recv += n
 	}
-	return buff, nil
+	return buff[:n], nil
 }

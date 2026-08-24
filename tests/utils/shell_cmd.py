@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 
@@ -7,8 +8,9 @@ def run(
     capture: bool = False,
     check: bool = False,
     shell: bool = False,
-    env: dict | None = None,
+    env: dict[str, str] = {},
 ) -> subprocess.CompletedProcess:
+
     return subprocess.run(
         cmd,
         cwd=cwd,
@@ -16,7 +18,7 @@ def run(
         stderr=subprocess.PIPE if capture else subprocess.DEVNULL,
         check=check,
         shell=shell,
-        env=env,
+        env=os.environ | env,
     )
 
 

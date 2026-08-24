@@ -13,7 +13,7 @@ class ChunkedSocket(socket.socket):
 
     def recv(self, bufsize: int, _flags: int = 0) -> bytes:
         data_len_to_recv = (
-            random.randrange(0, min(bufsize, self.max_chunk_size))
+            random.randrange(1, min(bufsize, self.max_chunk_size))
             if self.max_chunk_size != 1
             else 1
         )
