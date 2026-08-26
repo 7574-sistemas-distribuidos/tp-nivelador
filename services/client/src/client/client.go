@@ -1,7 +1,10 @@
 package client
 
 import (
+	"encoding/csv"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
@@ -14,6 +17,8 @@ const CONNECTION_ATTEMPS_DELAY_MS = 200
 const ECHO_CLIENT_BUFFER_SIZE = 512
 const ECHO_CLIENT_MESSAGE_AMOUNT = 3
 const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
+
+var INPUT_FILE = os.Getenv("INPUT_FILE")
 
 type ClientConfig struct {
 	ServerHost string
@@ -59,14 +64,24 @@ func connectToServer(host, port string) (net.Conn, error) {
 }
 
 func (client *Client) Run() error {
-	const mainAction = "test-echo-server"
+	const mainAction = "send-input-file"
 	defer client.conn.Close()
+	f, err := os.Open(INPUT_FILE)
+	if err != nil {
+		logger.Error("file-read", logger.Fail, "file", INPUT_FILE, "error", err)
+	}
+	defer f.Close()
+	csvReader := csv.NewReader(f)
+	rows, err := csvReader.ReadAll()
+	if err != nil {
+		logger.Error("file-read", logger.Fail, "file", INPUT_FILE, "error", err)
+	}
 
-	for messageId := range ECHO_CLIENT_MESSAGE_AMOUNT {
+	for messageId, row := range rows {
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
 
-		clientMessage := client.config.AgencyId
+		clientMessage := strings.Join(row, ",")
 
 		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
 			logger.Error("send-message", logger.Fail, messageArgs...)

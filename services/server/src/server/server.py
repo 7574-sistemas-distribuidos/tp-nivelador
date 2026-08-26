@@ -1,8 +1,12 @@
+import csv
+import os
+from pathlib import Path
 import socket
 import logger
 import safe_socket
 
 _ECHO_SERVER_MESSAGE_SIZE = 1024
+OUTPUT_FILE = os.getenv("OUTPUT_FILE")
 
 
 class Server:
@@ -13,6 +17,13 @@ class Server:
     def _handle_client(self, client_socket):
         action = "handle-client"
         message_amount = 0
+        csv_writer = None
+
+        if OUTPUT_FILE:
+            path = Path(OUTPUT_FILE)
+        else:
+            logger.error("write-file", logger.LogResult.fail)
+
         try:
             logger.info(action, logger.LogResult.in_progress)
             while True:
@@ -27,9 +38,18 @@ class Server:
                         message_amount,
                     )
                     return
-                message_amount += 1
+                with open(path, "a") as file:
+                    csv_writer = csv.writer(file)
+
+                    client_message_str = client_message.decode()
+                    row_data = client_message_str.split(",")
+
+                    message_amount += 1
+                    csv_writer.writerow(row_data)
+
                 safe_socket.send_all(client_socket, client_message)
         except Exception as e:
+            print(e)
             logger.error(
                 action, logger.LogResult.fail, "messages-amount", message_amount
             )
