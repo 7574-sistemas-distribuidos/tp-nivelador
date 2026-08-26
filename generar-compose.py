@@ -35,6 +35,12 @@ def generate_compose(filename, count):
                 f"AGENCY_ID={i}",
                 "SERVER_HOST=server",
                 "SERVER_PORT=5678",
+                "INPUT_FILE=/app/input/input.csv",
+                "OUTPUT_DIR=/app/output"
+            ],
+            "volumes": [
+                f"./input/input-{i}.csv:/app/input:ro",
+                f"./output/output-{i}:/app/output:rw"   
             ],
             "depends_on": ["server"]
         }
