@@ -11,14 +11,15 @@ import (
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
 
-const CONNECTION_ATTEMPTS_MAX = 3
+const CONNECTION_ATTEMPTS_MAX = 30
 const CONNECTION_ATTEMPS_DELAY_MS = 200
 
 const ECHO_CLIENT_BUFFER_SIZE = 512
 const ECHO_CLIENT_MESSAGE_AMOUNT = 3
-const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
+const ECHO_CLIENT_MESSAGE_DELAY_MS = 1
 
 var INPUT_FILE = os.Getenv("INPUT_FILE")
+var OUTPUT_FILE = os.Getenv("OUTPUT_FILE")
 
 type ClientConfig struct {
 	ServerHost string
@@ -69,12 +70,22 @@ func (client *Client) Run() error {
 	f, err := os.Open(INPUT_FILE)
 	if err != nil {
 		logger.Error("file-read", logger.Fail, "file", INPUT_FILE, "error", err)
+		return err
 	}
 	defer f.Close()
+
+	out, err := os.Create(OUTPUT_FILE)
+	if err != nil {
+		logger.Error("file-write", logger.Fail, "file", OUTPUT_FILE, "error", err)
+		return err
+	}
+	defer out.Close()
+
 	csvReader := csv.NewReader(f)
 	rows, err := csvReader.ReadAll()
 	if err != nil {
 		logger.Error("file-read", logger.Fail, "file", INPUT_FILE, "error", err)
+		return err
 	}
 
 	for messageId, row := range rows {
@@ -88,14 +99,14 @@ func (client *Client) Run() error {
 			return err
 		}
 
-		responseBuffer, err := safe_socket.RecvAll(client.conn, ECHO_CLIENT_BUFFER_SIZE)
+		responseBuffer, err := safe_socket.RecvAll(client.conn, len(clientMessage))
 		if err != nil {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err
 		}
 
-		if string(responseBuffer) == clientMessage {
-			logger.Error("check-response", logger.Fail, messageArgs...)
+		if _, err := out.WriteString(string(responseBuffer) + "\n"); err != nil {
+			logger.Error("write-response", logger.Fail, messageArgs...)
 			return err
 		}
 

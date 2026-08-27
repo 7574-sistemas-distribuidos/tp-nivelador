@@ -10,9 +10,6 @@ services:
       - PYTHONUNBUFFERED=1
       - SERVER_HOST=server
       - SERVER_PORT=5678
-      - OUTPUT_FILE=/output/output.csv
-    volumes:
-       - ./output:/output
 
   client_0:
     build:
@@ -26,8 +23,10 @@ services:
       - SERVER_HOST=server
       - SERVER_PORT=5678
       - INPUT_FILE=/input/input-0.csv
+      - OUTPUT_FILE=/output/output-0.csv
     volumes:
        - ./input:/input
+       - ./output:/output
 
   client_1:
     build:
@@ -41,8 +40,10 @@ services:
       - SERVER_HOST=server
       - SERVER_PORT=5678
       - INPUT_FILE=/input/input-1.csv
+      - OUTPUT_FILE=/output/output-1.csv
     volumes:
        - ./input:/input
+       - ./output:/output
 
   client_2:
     build:
@@ -56,8 +57,10 @@ services:
       - SERVER_HOST=server
       - SERVER_PORT=5678
       - INPUT_FILE=/input/input-2.csv
+      - OUTPUT_FILE=/output/output-2.csv
     volumes:
        - ./input:/input
+       - ./output:/output
 
   client_3:
     build:
@@ -71,8 +74,10 @@ services:
       - SERVER_HOST=server
       - SERVER_PORT=5678
       - INPUT_FILE=/input/input-3.csv
+      - OUTPUT_FILE=/output/output-3.csv
     volumes:
        - ./input:/input
+       - ./output:/output
 
   client_4:
     build:
@@ -86,5 +91,7 @@ services:
       - SERVER_HOST=server
       - SERVER_PORT=5678
       - INPUT_FILE=/input/input-4.csv
+      - OUTPUT_FILE=/output/output-4.csv
     volumes:
        - ./input:/input
+       - ./output:/output

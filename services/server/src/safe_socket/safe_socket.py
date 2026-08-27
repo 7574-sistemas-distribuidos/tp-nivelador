@@ -1,11 +1,16 @@
 import socket
 
-# TODO: Complete with a short-read/short-write tolerant implementation
+
+def recv_all(socket: socket.socket, size: int) -> bytes:
+    chunks = bytearray()
+    while len(chunks) < size:
+        chunk = socket.recv(size - len(chunks))
+        chunks.extend(chunk)
+    return bytes(chunks)
 
 
-def recv_all(socket: socket.socket, size):
-    return socket.recv(size)
-
-
-def send_all(socket: socket.socket, bytes):
-    return socket.send(bytes)
+def send_all(socket: socket.socket, data: bytes) -> int:
+    total_sent = 0
+    while total_sent < len(data):
+        total_sent += socket.send(data[total_sent:])
+    return total_sent

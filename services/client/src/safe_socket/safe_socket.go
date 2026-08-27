@@ -2,21 +2,30 @@ package safe_socket
 
 import "io"
 
-//TODO: Complete with a short-read/short-write tolerant implementation
-
 func SendAll(socket io.Writer, bytes []byte) error {
-	_, err := socket.Write(bytes)
+	n, err := socket.Write(bytes)
 	if err != nil {
 		return err
+	}
+	for n < len(bytes) {
+		bytes = bytes[n:]
+		n, err = socket.Write(bytes)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func RecvAll(socket io.Reader, size int) ([]byte, error) {
 	buff := make([]byte, size)
-	_, err := socket.Read(buff)
-	if err != nil {
-		return nil, err
+	total := 0
+	for total < size {
+		n, err := socket.Read(buff[total:])
+		if err != nil {
+			return nil, err
+		}
+		total += n
 	}
 	return buff, nil
 }
