@@ -4,6 +4,7 @@ import (
 	"net"
 	"time"
 
+	filehandler "github.com/7574-sistemas-distribuidos/tp-nivelador/src/file-handler"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
@@ -16,9 +17,11 @@ const ECHO_CLIENT_MESSAGE_AMOUNT = 3
 const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
 
 type ClientConfig struct {
-	ServerHost string
-	ServerPort string
-	AgencyId   string
+	ServerHost    string
+	ServerPort    string
+	AgencyId      string
+	InputFilePath string
+	OutputDir     string
 }
 
 type Client struct {
@@ -61,6 +64,13 @@ func connectToServer(host, port string) (net.Conn, error) {
 func (client *Client) Run() error {
 	const mainAction = "test-echo-server"
 	defer client.conn.Close()
+	records, err := filehandler.ReadCSVFile(client.config.InputFilePath)
+	if err != nil {
+		logger.Error("read-csv-file", logger.Fail, "err", err)
+		return err
+	}
+	recordAmount := len(records)
+	logger.Info("read-csv-file", logger.Success, "records", recordAmount)
 
 	for messageId := range ECHO_CLIENT_MESSAGE_AMOUNT {
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
@@ -85,8 +95,33 @@ func (client *Client) Run() error {
 		}
 
 		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
+
 	}
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
+	var receivedRecords [][]string
+	for i, record := range records {
+		logger.Info("record", logger.Success, "agency-id", client.config.AgencyId, "record-id", i, "record", record)
+		clientMessage := client.config.AgencyId + "," + record[0] + "," + record[1] + "," + record[2] + "," + record[3] + "," + record[4]
+		bufferSize := len(clientMessage)
+
+		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
+			logger.Error("send-message", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i)
+			return err
+		}
+
+		responseBuffer, err := safe_socket.RecvAll(client.conn, bufferSize)
+		if err != nil {
+			logger.Error("recv-response", logger.Fail)
+			return err
+		}
+		logger.Info("record-response", logger.Success, "agency-id", client.config.AgencyId, "record-id", i, "response", string(responseBuffer))
+		receivedRecords = append(receivedRecords, []string{string(responseBuffer)})
+	}
+
+	if err := filehandler.WriteCSVFile(client.config.OutputDir+"/output-"+client.config.AgencyId+".csv", receivedRecords); err != nil {
+		logger.Error("write-csv-file", logger.Fail, "err", err)
+		return err
+	}
 
 	return nil
 }

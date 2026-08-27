@@ -6,7 +6,6 @@ def generate_compose(filename, count):
 
 
     compose_data = {
-        "name": "tp0",
         "services": {
             "server": {
                 "container_name": "server",
@@ -35,12 +34,12 @@ def generate_compose(filename, count):
                 f"AGENCY_ID={i}",
                 "SERVER_HOST=server",
                 "SERVER_PORT=5678",
-                "INPUT_FILE=/app/input/input.csv",
+                "INPUT_FILE=/app/input.csv",
                 "OUTPUT_DIR=/app/output"
             ],
             "volumes": [
-                f"./input/input-{i}.csv:/app/input:ro",
-                f"./output/output-{i}:/app/output:rw"   
+                f"./input/input-{i}.csv:/app/input.csv:ro",
+               # f"./output/output-{i}:/app/output:rw"   
             ],
             "depends_on": ["server"]
         }
