@@ -12,7 +12,7 @@ import (
 const CONNECTION_ATTEMPTS_MAX = 3
 const CONNECTION_ATTEMPS_DELAY_MS = 500
 
-const ECHO_CLIENT_BUFFER_SIZE = 512
+const ECHO_CLIENT_BUFFER_SIZE = 1
 const ECHO_CLIENT_MESSAGE_AMOUNT = 3
 const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
 
@@ -88,6 +88,8 @@ func (client *Client) Run() error {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err
 		}
+		logger.Info("response", logger.Success, "agency-id", client.config.AgencyId, "response", string(responseBuffer))
+		logger.Info("check-response", logger.InProgress, clientMessage)
 
 		if string(responseBuffer) != clientMessage {
 			logger.Error("check-response", logger.Fail, messageArgs...)

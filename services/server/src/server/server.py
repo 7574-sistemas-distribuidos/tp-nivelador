@@ -2,7 +2,7 @@ import socket
 import logger
 import safe_socket
 
-_ECHO_SERVER_MESSAGE_SIZE = 1024
+_ECHO_SERVER_MESSAGE_SIZE = 1
 
 
 class Server:

@@ -1,0 +1,33 @@
+docker compose -f docker-compose.dev.yaml logs --follow
+client1  | 2026/08/28 13:51:11 INFO action=connect-to-server result=in-progress
+client1  | 2026/08/28 13:51:11 WARN action=connect-to-server result=fail attempt=0
+client1  | 2026/08/28 13:51:11 INFO action=connect-to-server result=success
+client1  | 2026/08/28 13:51:11 INFO action=read-csv-file result=success records=6
+client1  | 2026/08/28 13:51:11 INFO action=test-echo-server result=in-progress agency-id=1 message-id=0
+client1  | 2026/08/28 13:51:11 ERROR action=check-response result=fail agency-id=1 message-id=0
+server   | 2026/08/28 13:51:11 INFO action=accept-connection result=in-progress 
+server   | 2026/08/28 13:51:11 INFO action=accept-connection result=success 
+server   | 2026/08/28 13:51:11 INFO action=handle-client result=in-progress 
+server   | 2026/08/28 13:51:11 INFO action=recv-all result=in-progress bytes-received=b'1'
+server   | 2026/08/28 13:51:11 INFO action=handle-client result=in-progress saliendo de recv-all=0
+server   | 2026/08/28 13:51:11 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/28 13:51:11 ERROR action=handle-client result=fail messages-amount=1
+server   | 2026/08/28 13:51:11 ERROR action=server-run result=fail err=info() missing 1 required positional argument: 'result'
+client1  | 2026/08/28 13:53:22 INFO action=connect-to-server result=in-progress
+client1  | 2026/08/28 13:53:22 WARN action=connect-to-server result=fail attempt=0
+client1  | 2026/08/28 13:53:23 WARN action=connect-to-server result=fail attempt=1
+server   | 2026/08/28 13:53:23 INFO action=accept-connection result=in-progress 
+client1  | 2026/08/28 13:53:23 INFO action=connect-to-server result=success
+server   | 2026/08/28 13:53:23 INFO action=accept-connection result=success 
+server   | 2026/08/28 13:53:23 INFO action=handle-client result=in-progress 
+server   | 2026/08/28 13:53:23 INFO action=recv-all result=in-progress bytes-received=b'1'
+server   | 2026/08/28 13:53:23 INFO action=handle-client result=in-progress saliendo de recv-all=0
+client1  | 2026/08/28 13:53:23 INFO action=read-csv-file result=success records=6
+client1  | 2026/08/28 13:53:23 INFO action=test-echo-server result=in-progress agency-id=1 message-id=0
+client1  | 2026/08/28 13:53:23 ERROR action=check-response result=fail agency-id=1 message-id=0
+server   | 2026/08/28 13:53:23 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/28 13:53:23 INFO action=saliendo de recv-all por EOF result=success , bytes_received=0
+server   | 2026/08/28 13:53:23 INFO action=handle-client result=in-progress saliendo de recv-all=1
+server   | 2026/08/28 13:53:23 INFO action=handle-client result=success messages-amount=1
+server   | 2026/08/28 13:53:23 INFO action=accept-connection result=in-progress 
+[Kclient1 exited with code 0
