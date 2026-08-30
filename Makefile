@@ -24,5 +24,6 @@ logs:
 .PHONY: logs
 
 test:
+	rm failed_test.log -f
 	PYTHONPATH="$(PWD)" python3 tests/run.py
 .PHONY: test

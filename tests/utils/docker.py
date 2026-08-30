@@ -8,7 +8,7 @@ def up(docker_compose_path: str | None):
     env = {}
     if docker_compose_path:
         env["DOCKER_FILE_PATH"] = docker_compose_path
-    shell_cmd.run(args, capture=False, env=env)
+    shell_cmd.run(args, env=env)
 
 
 def down(docker_compose_path: str | None):
@@ -16,19 +16,16 @@ def down(docker_compose_path: str | None):
     env = {}
     if docker_compose_path:
         env["DOCKER_FILE_PATH"] = docker_compose_path
-    shell_cmd.run(args, capture=False, env=env)
+    shell_cmd.run(args, env=env)
 
 
 def stop(service_names: list[str], grace_period_seconds=5):
-    shell_cmd.run(
-        ["docker", "stop", "-t", str(grace_period_seconds), *service_names],
-        capture=False,
-    )
+    shell_cmd.run(["docker", "stop", "-t", str(grace_period_seconds), *service_names])
 
 
 def await_containers(service_names: list[str]) -> int:
     result = shell_cmd.run(
-        ["docker", "container", "wait", *service_names], capture=True
+        ["docker", "container", "wait", *service_names], redirect_output=shell_cmd.PIPE
     )
     zero_exit_code_count = 0
     for char in result.stdout.decode("utf-8"):
@@ -40,7 +37,8 @@ def await_containers(service_names: list[str]) -> int:
 
 def _get_file_contents(service_name: str, filepath: str) -> str:
     result = shell_cmd.run(
-        ["docker", "exec", service_name, "sh", "-c", f"cat {filepath}"], capture=True
+        ["docker", "exec", service_name, "sh", "-c", f"cat {filepath}"],
+        redirect_output=shell_cmd.PIPE,
     )
     return result.stdout
 
@@ -60,7 +58,7 @@ def _get_container_stats(service_name: str):
             "--no-trunc",
             service_name,
         ],
-        capture=True,
+        redirect_output=shell_cmd.PIPE,
     )
     return json.loads(result.stdout.decode("utf-8"))
 
