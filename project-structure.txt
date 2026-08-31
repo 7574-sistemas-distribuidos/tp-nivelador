@@ -1,0 +1,44 @@
+.
+├── docker-compose.dev.yaml
+├── docker-compose.yaml
+├── generar-compose.py
+├── INFORME.md
+├── input
+│   ├── input-0.csv
+│   ├── input-1.csv
+│   ├── input-2.csv
+│   ├── input-3.csv
+│   ├── input-4.csv
+│   ├── input-5.csv
+│   └── input-test.csv
+├── logs.txt
+├── Makefile
+├── output
+│   ├── output-1.csv
+│   └── server
+├── project-structure.txt
+├── README.md
+├── services
+│   ├── client
+│   └── server
+├── tests
+│   ├── batching_test_case.py
+│   ├── compose_files
+│   ├── concurrency_test_case.py
+│   ├── forced_exit_test_case.py
+│   ├── __init__.py
+│   ├── json_test_case.py
+│   ├── memory_profile.py
+│   ├── output_files_test_case.py
+│   ├── __pycache__
+│   ├── requirements.txt
+│   ├── run.py
+│   ├── services
+│   ├── short_read_write_client_test_case.py
+│   ├── short_read_write_server_test_case.py
+│   ├── sigterm_test_case.py
+│   ├── test_case.py
+│   └── utils
+└── test-server.sh
+
+12 directories, 30 files

@@ -17,7 +17,11 @@ def generate_compose(filename, count):
                     "PYTHONUNBUFFERED=1",
                     "SERVER_HOST=server",
                     "SERVER_PORT=5678",
+                    "STORAGE_DIR=/app/storage"
                 ],
+                "volumes": [
+                    "./output/server:/app/storage:rw"
+                ]
             }
         },
     }

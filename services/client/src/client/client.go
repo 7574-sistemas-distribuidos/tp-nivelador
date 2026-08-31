@@ -6,6 +6,7 @@ import (
 
 	filehandler "github.com/7574-sistemas-distribuidos/tp-nivelador/src/file-handler"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
+	protocol "github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
 
@@ -61,16 +62,9 @@ func connectToServer(host, port string) (net.Conn, error) {
 	return conn, err
 }
 
-func (client *Client) Run() error {
+func (client *Client) test_echo_server() error {
 	const mainAction = "test-echo-server"
 	defer client.conn.Close()
-	records, err := filehandler.ReadCSVFile(client.config.InputFilePath)
-	if err != nil {
-		logger.Error("read-csv-file", logger.Fail, "err", err)
-		return err
-	}
-	recordAmount := len(records)
-	logger.Info("read-csv-file", logger.Success, "records", recordAmount)
 
 	for messageId := range ECHO_CLIENT_MESSAGE_AMOUNT {
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
@@ -97,21 +91,41 @@ func (client *Client) Run() error {
 		}
 
 		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
-
 	}
+	return nil
+}
+
+func (client *Client) Run() error {
+	const mainAction = "run-client"
+	records, err := filehandler.ReadCSVFile(client.config.InputFilePath)
+	if err != nil {
+		logger.Error("read-csv-file", logger.Fail, "err", err)
+		return err
+	}
+	recordAmount := len(records)
+	logger.Info("read-csv-file", logger.Success, "records", recordAmount)
+
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
 	var receivedRecords [][]string
 	for i, record := range records {
 		logger.Info("record", logger.Success, "agency-id", client.config.AgencyId, "record-id", i, "record", record)
-		clientMessage := client.config.AgencyId + "," + record[0] + "," + record[1] + "," + record[2] + "," + record[3] + "," + record[4]
-		bufferSize := len(clientMessage)
+		play, err := protocol.NewBetFromRecord(record)
+		if err != nil {
+			logger.Error("new-play-from-record", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i, "err", err)
+			return err
+		}
+		playSerialized, totalLenght, err := protocol.SerializeBet(play, client.config.AgencyId)
+		if err != nil {
+			logger.Error("serialize-play", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i, "err", err)
+			return err
+		}
 
-		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
+		if err := safe_socket.SendAll(client.conn, playSerialized); err != nil {
 			logger.Error("send-message", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i)
 			return err
 		}
 
-		responseBuffer, err := safe_socket.RecvAll(client.conn, bufferSize)
+		responseBuffer, err := safe_socket.RecvAll(client.conn, int(totalLenght))
 		if err != nil {
 			logger.Error("recv-response", logger.Fail)
 			return err

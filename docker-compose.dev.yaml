@@ -9,6 +9,9 @@ services:
     - PYTHONUNBUFFERED=1
     - SERVER_HOST=server
     - SERVER_PORT=5678
+    - STORAGE_DIR=/app/bets.csv
+    volumes:
+    - ./output/server:/app:rw
   client1:
     container_name: client1
     build:

@@ -1,33 +1,269 @@
 docker compose -f docker-compose.dev.yaml logs --follow
-client1  | 2026/08/28 13:51:11 INFO action=connect-to-server result=in-progress
-client1  | 2026/08/28 13:51:11 WARN action=connect-to-server result=fail attempt=0
-client1  | 2026/08/28 13:51:11 INFO action=connect-to-server result=success
-client1  | 2026/08/28 13:51:11 INFO action=read-csv-file result=success records=6
-client1  | 2026/08/28 13:51:11 INFO action=test-echo-server result=in-progress agency-id=1 message-id=0
-client1  | 2026/08/28 13:51:11 ERROR action=check-response result=fail agency-id=1 message-id=0
-server   | 2026/08/28 13:51:11 INFO action=accept-connection result=in-progress 
-server   | 2026/08/28 13:51:11 INFO action=accept-connection result=success 
-server   | 2026/08/28 13:51:11 INFO action=handle-client result=in-progress 
-server   | 2026/08/28 13:51:11 INFO action=recv-all result=in-progress bytes-received=b'1'
-server   | 2026/08/28 13:51:11 INFO action=handle-client result=in-progress saliendo de recv-all=0
-server   | 2026/08/28 13:51:11 INFO action=send-all result=in-progress bytes-sent=1
-server   | 2026/08/28 13:51:11 ERROR action=handle-client result=fail messages-amount=1
-server   | 2026/08/28 13:51:11 ERROR action=server-run result=fail err=info() missing 1 required positional argument: 'result'
-client1  | 2026/08/28 13:53:22 INFO action=connect-to-server result=in-progress
-client1  | 2026/08/28 13:53:22 WARN action=connect-to-server result=fail attempt=0
-client1  | 2026/08/28 13:53:23 WARN action=connect-to-server result=fail attempt=1
-server   | 2026/08/28 13:53:23 INFO action=accept-connection result=in-progress 
-client1  | 2026/08/28 13:53:23 INFO action=connect-to-server result=success
-server   | 2026/08/28 13:53:23 INFO action=accept-connection result=success 
-server   | 2026/08/28 13:53:23 INFO action=handle-client result=in-progress 
-server   | 2026/08/28 13:53:23 INFO action=recv-all result=in-progress bytes-received=b'1'
-server   | 2026/08/28 13:53:23 INFO action=handle-client result=in-progress saliendo de recv-all=0
-client1  | 2026/08/28 13:53:23 INFO action=read-csv-file result=success records=6
-client1  | 2026/08/28 13:53:23 INFO action=test-echo-server result=in-progress agency-id=1 message-id=0
-client1  | 2026/08/28 13:53:23 ERROR action=check-response result=fail agency-id=1 message-id=0
-server   | 2026/08/28 13:53:23 INFO action=send-all result=in-progress bytes-sent=1
-server   | 2026/08/28 13:53:23 INFO action=saliendo de recv-all por EOF result=success , bytes_received=0
-server   | 2026/08/28 13:53:23 INFO action=handle-client result=in-progress saliendo de recv-all=1
-server   | 2026/08/28 13:53:23 INFO action=handle-client result=success messages-amount=1
-server   | 2026/08/28 13:53:23 INFO action=accept-connection result=in-progress 
+server   | 2026/08/29 14:26:06 INFO action=accept-connection result=in-progress 
+server   | 2026/08/29 14:26:06 INFO action=accept-connection result=success 
+server   | 2026/08/29 14:26:06 INFO action=handle-client result=in-progress 
+server   | 2026/08/29 14:26:06 INFO action=recv-all result=in-progress bytes-received=b'1'
+server   | 2026/08/29 14:26:06 INFO action=send-all result=in-progress bytes-sent=1
+client1  | 2026/08/29 14:26:05 INFO action=connect-to-server result=in-progress
+client1  | 2026/08/29 14:26:05 WARN action=connect-to-server result=fail attempt=0
+client1  | 2026/08/29 14:26:06 WARN action=connect-to-server result=fail attempt=1
+client1  | 2026/08/29 14:26:06 INFO action=connect-to-server result=success
+client1  | 2026/08/29 14:26:06 INFO action=read-csv-file result=success records=3
+client1  | 2026/08/29 14:26:06 INFO action=test-echo-server result=in-progress agency-id=1 message-id=0
+client1  | 2026/08/29 14:26:06 INFO action=response result=success agency-id=1 response=1
+client1  | 2026/08/29 14:26:06 INFO action=check-response result=in-progress !BADKEY=1
+client1  | 2026/08/29 14:26:07 INFO action=test-echo-server result=in-progress agency-id=1 message-id=1
+server   | 2026/08/29 14:26:07 INFO action=recv-all result=in-progress bytes-received=b'1'
+client1  | 2026/08/29 14:26:07 INFO action=response result=success agency-id=1 response=1
+client1  | 2026/08/29 14:26:07 INFO action=check-response result=in-progress !BADKEY=1
+server   | 2026/08/29 14:26:07 INFO action=send-all result=in-progress bytes-sent=1
+client1  | 2026/08/29 14:26:08 INFO action=test-echo-server result=in-progress agency-id=1 message-id=2
+server   | 2026/08/29 14:26:08 INFO action=recv-all result=in-progress bytes-received=b'1'
+server   | 2026/08/29 14:26:08 INFO action=send-all result=in-progress bytes-sent=1
+client1  | 2026/08/29 14:26:08 INFO action=response result=success agency-id=1 response=1
+client1  | 2026/08/29 14:26:08 INFO action=check-response result=in-progress !BADKEY=1
+client1  | 2026/08/29 14:26:09 INFO action=test-echo-server result=success agency-id=1
+client1  | 2026/08/29 14:26:09 INFO action=record result=success agency-id=1 record-id=0 record="[Santiago Lionel Lorca 30904465 1999-03-17 2201]"
+client1  | 2026/08/29 14:26:09 INFO action=NewPlayFromRecord result=success !BADKEY=" Successfully created Play struct from record"
+client1  | 2026/08/29 14:26:09 INFO action=SerializePlay result=success !BADKEY=" Successfully serialized Play struct"
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'!'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x01'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x0f'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'S'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'n'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b't'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'i'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'g'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'o'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b' '
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'L'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'i'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'o'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'n'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'e'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'l'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x05'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'L'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'o'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'r'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'c'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x01'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xd7'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x90'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x91'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x07'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xcf'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x03'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x11'
+client1  | 2026/08/29 14:26:09 INFO action=record-response result=success agency-id=1 record-id=0 response="\x00\x00\x00!\x01\x0fSantiago Lionel\x05Lorca\x01א\x91\a\xcf"
+client1  | 2026/08/29 14:26:09 INFO action=record result=success agency-id=1 record-id=1 record="[Agustin Emanuel Zambrano 21689196 2000-05-10 9325]"
+client1  | 2026/08/29 14:26:09 INFO action=NewPlayFromRecord result=success !BADKEY=" Successfully created Play struct from record"
+client1  | 2026/08/29 14:26:09 INFO action=SerializePlay result=success !BADKEY=" Successfully serialized Play struct"
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x08'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x99'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'$'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x01'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x0f'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'A'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'g'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'u'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b's'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b't'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'i'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'n'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b' '
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'E'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'm'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'n'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'u'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'e'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'l'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x08'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'Z'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'm'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'b'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'r'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'n'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'o'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x01'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'J'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xf3'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'l'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x07'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xd0'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x05'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\n'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'$'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'm'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+client1  | 2026/08/29 14:26:09 INFO action=record-response result=success agency-id=1 record-id=1 response="\x03\x11\b\x99\x00\x00\x00$\x01\x0fAgustin Emanuel\bZambrano\x01J"
+client1  | 2026/08/29 14:26:09 INFO action=record result=success agency-id=1 record-id=2 record="[Tiago Nicolás Rivera 34407251 2001-08-29 1033]"
+client1  | 2026/08/29 14:26:09 INFO action=NewPlayFromRecord result=success !BADKEY=" Successfully created Play struct from record"
+client1  | 2026/08/29 14:26:09 INFO action=SerializePlay result=success !BADKEY=" Successfully serialized Play struct"
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x00'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'!'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x01'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x0e'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'T'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'i'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'g'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'o'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b' '
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'N'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'i'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'c'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'o'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'l'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xc3'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xa1'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b's'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x06'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'R'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'i'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'v'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'e'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'r'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'a'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x02'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\r'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x03'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'S'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x07'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\xd1'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x08'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x1d'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\x04'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+server   | 2026/08/29 14:26:09 INFO action=recv-all result=in-progress bytes-received=b'\t'
+server   | 2026/08/29 14:26:09 INFO action=send-all result=in-progress bytes-sent=1
+client1  | 2026/08/29 14:26:09 INFO action=record-response result=success agency-id=1 record-id=2 response="\xf3l\a\xd0\x05\n$m\x00\x00\x00!\x01\x0eTiago Nicolás\x06Rive"
+server   | 2026/08/29 14:26:09 ERROR action=handle-client result=fail messages-amount=117
+server   | 2026/08/29 14:26:09 ERROR action=server-run result=fail err=[Errno 104] Connection reset by peer
 [Kclient1 exited with code 0
+[Kserver exited with code 1
