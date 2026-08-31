@@ -3,17 +3,22 @@ package client
 import (
 	"net"
 	"time"
+	"bufio"
+	"os"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
-const CONNECTION_ATTEMPS_DELAY_MS = 200
+const CONNECTION_ATTEMPS_DELAY_MS = 1000 // 200
 
 const ECHO_CLIENT_BUFFER_SIZE = 512
 const ECHO_CLIENT_MESSAGE_AMOUNT = 3
 const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
+const INPUT_FILE = "/app/input/input-"
+const OUTPUT_FILE = "/app/output/output-"
+const FILE_EXTENSION = ".csv"
 
 type ClientConfig struct {
 	ServerHost string
@@ -62,13 +67,29 @@ func (client *Client) Run() error {
 	const mainAction = "test-echo-server"
 	defer client.conn.Close()
 
-	for messageId := range ECHO_CLIENT_MESSAGE_AMOUNT {
-		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
+	inputFile, err := os.Open(INPUT_FILE + client.config.AgencyId + FILE_EXTENSION)
+	if err != nil {
+		logger.Error(mainAction, logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(OUTPUT_FILE + client.config.AgencyId + FILE_EXTENSION)
+	if err != nil {
+		logger.Error(mainAction, logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+	defer outputFile.Close()	
+
+	lineCount := 0
+	scanner := bufio.NewScanner(inputFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		lineCount++
+		messageArgs := []any{"agency-id", client.config.AgencyId, "message", line}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
 
-		clientMessage := client.config.AgencyId
-
-		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
+		if err := safe_socket.SendAll(client.conn, []byte(line)); err != nil {
 			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
@@ -79,14 +100,17 @@ func (client *Client) Run() error {
 			return err
 		}
 
-		if string(responseBuffer) != clientMessage {
-			logger.Error("check-response", logger.Fail, messageArgs...)
+		if _, err := outputFile.WriteString(string(responseBuffer) + "\n"); err != nil {
+			logger.Error("write-output-file", logger.Fail, messageArgs...)
 			return err
 		}
-
-		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
 	}
-	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
+	if err := scanner.Err(); err != nil {
+		logger.Error("scan-input-file", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId, "lines-read", lineCount)
+	
 
 	return nil
 }

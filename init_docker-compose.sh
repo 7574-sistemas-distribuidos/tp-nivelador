@@ -36,6 +36,9 @@ for ((i=0; i<CLIENTES; i++)); do
     container_name: client_$i
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=$i
       - SERVER_HOST=server

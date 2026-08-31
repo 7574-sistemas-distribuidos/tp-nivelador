@@ -18,6 +18,9 @@ services:
     container_name: client_0
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=0
       - SERVER_HOST=server
@@ -29,6 +32,9 @@ services:
     container_name: client_1
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=1
       - SERVER_HOST=server
@@ -40,6 +46,9 @@ services:
     container_name: client_2
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=2
       - SERVER_HOST=server
@@ -51,6 +60,9 @@ services:
     container_name: client_3
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=3
       - SERVER_HOST=server
@@ -62,6 +74,9 @@ services:
     container_name: client_4
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=4
       - SERVER_HOST=server
@@ -73,6 +88,9 @@ services:
     container_name: client_5
     depends_on:
       - server
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
     environment:
       - AGENCY_ID=5
       - SERVER_HOST=server
