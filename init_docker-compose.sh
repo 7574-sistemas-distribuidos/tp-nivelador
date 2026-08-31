@@ -18,6 +18,8 @@ services:
       context: ./services/server
       dockerfile: Dockerfile
     container_name: server
+    ports:
+      - "$SERVER_PORT:$SERVER_PORT"
     environment:
       - PYTHONUNBUFFERED=1
       - SERVER_HOST=server
