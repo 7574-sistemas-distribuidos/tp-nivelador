@@ -5,6 +5,7 @@ import (
 	"time"
 	"bufio"
 	"os"
+	"encoding/binary"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
@@ -13,12 +14,12 @@ import (
 const CONNECTION_ATTEMPTS_MAX = 3
 const CONNECTION_ATTEMPS_DELAY_MS = 1000 // 200
 
-const ECHO_CLIENT_BUFFER_SIZE = 512
 const ECHO_CLIENT_MESSAGE_AMOUNT = 3
 const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
 const INPUT_FILE = "/app/input/input-"
 const OUTPUT_FILE = "/app/output/output-"
 const FILE_EXTENSION = ".csv"
+const LENGTH_MESSAGE_SIZE = 2
 
 type ClientConfig struct {
 	ServerHost string
@@ -86,6 +87,15 @@ func (client *Client) Run() error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineCount++
+
+		length_msg := make([]byte, LENGTH_MESSAGE_SIZE) // revisar numero 
+		binary.BigEndian.PutUint16(length_msg, uint16(len(line)))
+
+		if err := safe_socket.SendAll(client.conn, length_msg); err != nil {
+			logger.Error("send-message-length", logger.Fail, "agency-id", client.config.AgencyId)
+			return err
+		}
+
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message", line}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
 
@@ -94,7 +104,14 @@ func (client *Client) Run() error {
 			return err
 		}
 
-		responseBuffer, err := safe_socket.RecvAll(client.conn, ECHO_CLIENT_BUFFER_SIZE)
+		length_response, err := safe_socket.RecvAll(client.conn, LENGTH_MESSAGE_SIZE) 
+		if err != nil {
+			logger.Error("recv-response-length", logger.Fail, messageArgs...)
+			return err
+		}
+
+		responseSize := int(binary.BigEndian.Uint16(length_response))
+		responseBuffer, err := safe_socket.RecvAll(client.conn, responseSize)
 		if err != nil {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err

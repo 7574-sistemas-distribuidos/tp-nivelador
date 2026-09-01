@@ -2,7 +2,7 @@ import socket
 import logger
 import safe_socket
 
-_ECHO_SERVER_MESSAGE_SIZE = 1024
+LENGHT_MESSAGE_SIZE = 2
 
 
 class Server:
@@ -16,8 +16,21 @@ class Server:
         try:
             logger.info(action, logger.LogResult.in_progress)
             while True:
+                
+                client_message_size = safe_socket.recv_all(client_socket, LENGHT_MESSAGE_SIZE)
+                if not client_message_size:
+                    logger.info(
+                        action,
+                        logger.LogResult.success,
+                        "messages-amount",
+                        message_amount,
+                    )
+                    return
+                
+                message_size = int.from_bytes(client_message_size, byteorder='big')
+
                 client_message = safe_socket.recv_all(
-                    client_socket, _ECHO_SERVER_MESSAGE_SIZE
+                    client_socket, message_size
                 )
                 if not client_message:
                     logger.info(
@@ -28,12 +41,18 @@ class Server:
                     )
                     return
                 message_amount += 1
-                safe_socket.send_all(client_socket, client_message)
+                try:
+                    safe_socket.send_all(client_socket, client_message_size)
+                    safe_socket.send_all(client_socket, client_message)
+                except RuntimeError as e:
+                    logger.warn(action, "send failed, cliente desconectado", "messages-amount", message_amount)
+                    return
+                
         except Exception as e:
             logger.error(
                 action, logger.LogResult.fail, "messages-amount", message_amount
             )
-            raise e
+            return
 
     def run(self):
         action = "accept-connection"
@@ -46,7 +65,7 @@ class Server:
                     client_socket, _ = server_socket.accept()
                 except Exception as e:
                     logger.error(action, logger.LogResult.fail)
-                    raise e
+                    continue
                 logger.info(action, logger.LogResult.success)
 
                 self._handle_client(client_socket)
