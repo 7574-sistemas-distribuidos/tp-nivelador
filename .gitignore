@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtualenvs
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+
+# Test artifacts
+failed_test.log
+
+# Generated bet results
+output/
