@@ -23,6 +23,10 @@ logs:
 	docker compose -f $(DOCKER_FILE_PATH) logs --follow
 .PHONY: logs
 
+verify:
+	./scripts/echo_server_verifier.sh
+.PHONY: verify
+
 test:
 	rm failed_test.log -f
 	PYTHONPATH="$(PWD)" python3 tests/run.py
