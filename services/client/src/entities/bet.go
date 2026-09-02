@@ -1,4 +1,4 @@
-package protocol
+package entities
 
 import (
 	"encoding/binary"
@@ -45,10 +45,10 @@ func NewBetFromRecord(record []string) (Bet, error) {
 	}, nil
 }
 
-func SerializeBet(p Bet, agencyId string) ([]byte, uint32, error) {
+func SerializeBet(p Bet, agencyId string) ([]byte, error) {
 	if len(p.FirstName) > 255 || len(p.LastName) > 255 {
 		logger.Error("SerializeBetFirstNameAndLastName", logger.Fail, " FirstName or LastName exceeds 255 characters")
-		return nil, 0, errors.New("FirstName or LastName exceeds 255 characters")
+		return nil, errors.New("FirstName or LastName exceeds 255 characters")
 	}
 
 	var payload []byte
@@ -57,7 +57,7 @@ func SerializeBet(p Bet, agencyId string) ([]byte, uint32, error) {
 
 	if err != nil {
 		logger.Error("SerializeBet", logger.Fail, " Failed to parse AgencyId: ", err)
-		return nil, 0, err
+		return nil, err
 	}
 	payload = append(payload, byte(agencyIdParsed))
 
@@ -80,5 +80,5 @@ func SerializeBet(p Bet, agencyId string) ([]byte, uint32, error) {
 	finalBuffer = append(finalBuffer, payload...)
 	logger.Info("SerializeBet", logger.Success, " Successfully serialized Bet struct")
 
-	return finalBuffer, totalLength, nil
+	return finalBuffer, nil
 }

@@ -6,7 +6,7 @@ import (
 
 	filehandler "github.com/7574-sistemas-distribuidos/tp-nivelador/src/file-handler"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
-	protocol "github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
 
@@ -104,36 +104,9 @@ func (client *Client) Run() error {
 	}
 	recordAmount := len(records)
 	logger.Info("read-csv-file", logger.Success, "records", recordAmount)
+	protocol.SendMessages(client.conn, records, client.config.AgencyId)
 
-	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
 	var receivedRecords [][]string
-	for i, record := range records {
-		logger.Info("record", logger.Success, "agency-id", client.config.AgencyId, "record-id", i, "record", record)
-		play, err := protocol.NewBetFromRecord(record)
-		if err != nil {
-			logger.Error("new-play-from-record", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i, "err", err)
-			return err
-		}
-		playSerialized, totalLenght, err := protocol.SerializeBet(play, client.config.AgencyId)
-		if err != nil {
-			logger.Error("serialize-play", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i, "err", err)
-			return err
-		}
-
-		if err := safe_socket.SendAll(client.conn, playSerialized); err != nil {
-			logger.Error("send-message", logger.Fail, "agency-id", client.config.AgencyId, "record-id", i)
-			return err
-		}
-
-		responseBuffer, err := safe_socket.RecvAll(client.conn, int(totalLenght))
-		if err != nil {
-			logger.Error("recv-response", logger.Fail)
-			return err
-		}
-		logger.Info("record-response", logger.Success, "agency-id", client.config.AgencyId, "record-id", i, "response", string(responseBuffer))
-		receivedRecords = append(receivedRecords, []string{string(responseBuffer)})
-	}
-
 	if err := filehandler.WriteCSVFile(client.config.OutputDir+"/output-"+client.config.AgencyId+".csv", receivedRecords); err != nil {
 		logger.Error("write-csv-file", logger.Fail, "err", err)
 		return err

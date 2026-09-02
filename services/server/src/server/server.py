@@ -1,8 +1,8 @@
 import socket
 import logger
 import safe_socket
-from protocol.message_handler import read_message
 from protocol.bet import bet_from_bytes
+from protocol.message_receiver import handle_message
 from lottery.lottery import Lottery
 
 class Server:
@@ -14,11 +14,10 @@ class Server:
     def _handle_client(self, client_socket):
         action = "handle-client"
         message_amount = 0
-        bet_list = []
         try:
             logger.info(action, logger.LogResult.in_progress)
             while True:
-                client_message = read_message(client_socket)
+                client_message = handle_message(client_socket,self.lottery)
                 if not client_message:
                     logger.info(
                         action,
@@ -26,25 +25,9 @@ class Server:
                         "messages-amount",
                         message_amount,
                     )
-                    self.lottery.store_bets(bet_list)
                     return
-                bet = bet_from_bytes(client_message)
-                logger.info(
-                    action,
-                    logger.LogResult.success,
-                    "bet",
-                    {
-                        "agency_id": bet.agency_id,
-                        "first_name": bet.first_name,
-                        "last_name": bet.last_name,
-                        "document": bet.document,
-                        "birthdate": bet.birthdate,
-                        "number": bet.number,
-                    },
-                )
-                bet_list.append(bet)
                 message_amount += 1
-                safe_socket.send_all(client_socket, client_message)
+                safe_socket.send_all(client_socket, b'\x01')
         except Exception as e:
             logger.error(
                 action, logger.LogResult.fail, "messages-amount", message_amount
