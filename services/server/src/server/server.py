@@ -16,9 +16,7 @@ class Server:
         try:
             logger.info(action, logger.LogResult.in_progress)
             while True:
-                client_message = safe_socket.recv_all(
-                    client_socket, _ECHO_SERVER_MESSAGE_SIZE
-                )
+                client_message = self.process_action(client_socket)
                 if not client_message:
                     logger.info(
                         action,
@@ -34,6 +32,13 @@ class Server:
                 action, logger.LogResult.fail, "messages-amount", message_amount
             )
             raise e
+
+    def process_action(self, client_socket) -> Any:
+        client_message = safe_socket.recv_all(
+            client_socket, _ECHO_SERVER_MESSAGE_SIZE
+        )
+
+        return client_message
 
     def run(self):
         action = "accept-connection"
