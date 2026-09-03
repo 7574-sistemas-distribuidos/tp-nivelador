@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"encoding/csv"
 	"net"
 	"os"
@@ -14,9 +15,8 @@ import (
 const CONNECTION_ATTEMPTS_MAX = 30
 const CONNECTION_ATTEMPS_DELAY_MS = 200
 
-const ECHO_CLIENT_BUFFER_SIZE = 512
-const ECHO_CLIENT_MESSAGE_AMOUNT = 3
-const ECHO_CLIENT_MESSAGE_DELAY_MS = 1
+const ECHO_END_CONNECTION = "END"
+const ECHO_ACK_OK = "OK"
 
 var INPUT_FILE = os.Getenv("INPUT_FILE")
 var OUTPUT_FILE = os.Getenv("OUTPUT_FILE")
@@ -92,26 +92,42 @@ func (client *Client) Run() error {
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
 
-		clientMessage := strings.Join(row, ",")
+		clientMessage := strings.Join(append([]string{client.config.AgencyId}, row...), ",")
 
 		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
 			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
 
-		responseBuffer, err := safe_socket.RecvAll(client.conn, len(clientMessage))
+		_, err := safe_socket.RecvAll(client.conn, len(ECHO_ACK_OK))
 		if err != nil {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err
 		}
 
-		if _, err := out.WriteString(string(responseBuffer) + "\n"); err != nil {
-			logger.Error("write-response", logger.Fail, messageArgs...)
+	}
+	if err := safe_socket.SendAll(client.conn, []byte(ECHO_END_CONNECTION)); err != nil {
+		logger.Error("send-message", logger.Fail)
+		return err
+	}
+
+	reader := bufio.NewReader(client.conn)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			logger.Error("recv-response", logger.Fail, "agency-id", client.config.AgencyId)
 			return err
 		}
-
-		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
+		line = strings.TrimRight(line, "\n")
+		if line == ECHO_END_CONNECTION {
+			break
+		}
+		if _, err := out.WriteString(line + "\n"); err != nil {
+			logger.Error("write-response", logger.Fail, "agency-id", client.config.AgencyId)
+			return err
+		}
 	}
+
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
 
 	return nil
