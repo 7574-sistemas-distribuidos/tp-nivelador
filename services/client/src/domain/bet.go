@@ -1,4 +1,4 @@
-package protocol
+package domain
 
 import (
 	"fmt"

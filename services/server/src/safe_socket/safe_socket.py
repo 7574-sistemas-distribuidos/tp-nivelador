@@ -1,16 +1,20 @@
 import socket
 
 
-def recv_all(socket: socket.socket, size):
+def recv_all(sock: socket_module.socket, size: int) -> bytes:
     buffer = bytearray()
     while len(buffer) < size:
-        chunk = socket.recv(size - len(buffer))
+        chunk = sock.recv(size - len(buffer))
+        if not chunk:
+            raise ConnectionError("socket connection broken while receiving")
         buffer.extend(chunk)
     return bytes(buffer)
 
 
-def send_all(socket: socket.socket, bytes):
+def send_all(sock: socket_module.socket, data: bytes) -> None:
     sent = 0
-    while sent < len(bytes):
-        sent += socket.send(memoryview(bytes)[sent:])
-    return sent
+    while sent < len(data):
+        n = sock.send(memoryview(data)[sent:])
+        if n == 0:
+            raise ConnectionError("socket connection broken while sending")
+        sent += n

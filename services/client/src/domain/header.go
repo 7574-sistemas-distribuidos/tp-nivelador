@@ -1,20 +1,19 @@
-package protocol
+package domain
 
 import (
 	"fmt"
+)
+
+const (
+	MESSAGE_TYPE_SIZE = 1 // u8
+	PAYLOAD_LEN_SIZE  = 4 // u32
+	HEADER_SIZE       = MESSAGE_TYPE_SIZE + PAYLOAD_LEN_SIZE
 )
 
 type MessageHeader struct {
 	Type       MessageType
 	PayloadLen uint32
 }
-type MessageType uint8
-
-const (
-	MessageTypeRegisterAgency MessageType = iota + 1
-	MessageTypeAck
-	MessageTypeBet
-)
 
 func (h MessageHeader) Serialize() []byte {
 	return []byte{

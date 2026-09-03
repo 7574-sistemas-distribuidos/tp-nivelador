@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/domain"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 )
@@ -90,9 +91,9 @@ func (client *Client) Run() error {
 		return sendBetsErr
 	}
 
-	err := client.readWinners(outputFile)
-	if err != nil {
-		return err
+	awaitingWinnersErr := client.sendAwaitingWinners()
+	if awaitingWinnersErr != nil {
+		return awaitingWinnersErr
 	}
 
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
@@ -101,33 +102,43 @@ func (client *Client) Run() error {
 }
 
 func (client *Client) readInputFile() (*os.File, error) {
+	const action = "open-input-file"
+	const inputFileArg = "input-file"
+	logger.Info(action, logger.InProgress, inputFileArg, client.config.InputFile)
+
 	file, err := os.Open(client.config.InputFile)
 	if err != nil {
-		logger.Warn("open-file", logger.Fail, "input-file", client.config.InputFile)
+		logger.Error(action, logger.Fail, inputFileArg, client.config.InputFile)
 		return nil, err
 	}
+
+	logger.Info(action, logger.Success, inputFileArg, client.config.InputFile)
 	return file, nil
 }
 
 func (client *Client) createOutputFile() (*os.File, error) {
+	const action = "create-output-file"
+	const outputFileArg = "output-file"
+	logger.Info(action, logger.InProgress, outputFileArg, client.config.OutputFile)
+
 	outputFile, err := os.Create(client.config.OutputFile)
 	if err != nil {
-		logger.Warn("create-output-file", logger.Fail, "output-file", client.config.OutputFile)
+		logger.Error(action, logger.Fail, outputFileArg, client.config.OutputFile)
 		return nil, err
 	}
+
+	logger.Info(action, logger.Success, outputFileArg, client.config.OutputFile)
 	return outputFile, nil
 }
 
 func (client *Client) registerAgency(agencyId string) error {
-	payload := []byte(agencyId)
-	if err := protocol.SendMessage(client.conn, protocol.MessageTypeRegisterAgency, payload); err != nil {
-		logger.Error("register-agency", logger.Fail, "agency-id", agencyId)
-		return err
-	}
-	if err := client.readAck(); err != nil {
-		return err
-	}
-	return nil
+	return client.step("register-agency", func() error {
+		message := domain.RegisterAgencyMessage(agencyId)
+		if err := protocol.SendMessage(client.conn, message); err != nil {
+			return err
+		}
+		return client.readAck()
+	}, "agency-id", agencyId)
 }
 
 func (client *Client) sendBets(file *os.File) error {
@@ -135,7 +146,7 @@ func (client *Client) sendBets(file *os.File) error {
 	scanner.Buffer(make([]byte, BUFFER_SIZE), MAX_LINE_SIZE)
 
 	for messageId := 1; scanner.Scan(); messageId++ {
-		bet, betParseErr := protocol.ParseBetLine(scanner.Text())
+		bet, betParseErr := domain.ParseBetLine(scanner.Text())
 		if betParseErr != nil {
 			return betParseErr
 		}
@@ -152,41 +163,45 @@ func (client *Client) sendBets(file *os.File) error {
 	return nil
 }
 
-func (client *Client) readWinners(outputFile *os.File) error {
-	output := bufio.NewWriter(outputFile)
-
-	if err := output.Flush(); err != nil {
-		logger.Error("write-output-file", logger.Fail, "output-file", client.config.OutputFile)
-		return err
-	}
-	return nil
+func (client *Client) sendBet(bet domain.Bet, betId int) error {
+	return client.step("send-bet", func() error {
+		message := domain.BetMessage(bet)
+		if err := protocol.SendMessage(client.conn, message); err != nil {
+			return err
+		}
+		return client.readAck()
+	}, "bet-id", betId)
 }
 
-func (client *Client) sendBet(bet protocol.Bet, betId int) error {
-	logger.Info("send-bet", logger.InProgress, "bet-id", betId)
-
-	payload := bet.Serialize()
-	if err := protocol.SendMessage(client.conn, protocol.MessageTypeBet, payload); err != nil {
-		logger.Error("send-bet-message", logger.Fail, "bet", string(payload))
-		return err
-	}
-
-	err2 := client.readAck()
-	if err2 != nil {
-		return err2
-	}
-	return nil
+func (client *Client) sendAwaitingWinners() error {
+	return client.step("send-awaiting-winners", func() error {
+		message := domain.AwaitingWinnersMessage()
+		if err := protocol.SendMessage(client.conn, message); err != nil {
+			return err
+		}
+		return client.readAck()
+	}, "agency-id", client.config.AgencyId)
 }
 
 func (client *Client) readAck() error {
-	header, _, err := protocol.ReceiveMessage(client.conn)
-	if err != nil {
-		logger.Error("read-ack", logger.Fail)
+	return client.step("read-ack", func() error {
+		header, _, err := protocol.ReceiveMessage(client.conn)
+		if err != nil {
+			return err
+		}
+		if header.Type != domain.MessageTypeAck {
+			return errors.New("expected ack message type, got different type")
+		}
+		return nil
+	})
+}
+
+func (client *Client) step(action string, fn func() error, args ...any) error {
+	logger.Info(action, logger.InProgress, args...)
+	if err := fn(); err != nil {
+		logger.Error(action, logger.Fail, args...)
 		return err
 	}
-	if header.Type != protocol.MessageTypeAck {
-		logger.Error("invalid-message-type", logger.Fail)
-		return errors.New("expected ack message type, got different type")
-	}
+	logger.Info(action, logger.Success, args...)
 	return nil
 }

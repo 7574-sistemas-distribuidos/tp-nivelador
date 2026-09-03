@@ -1,6 +1,8 @@
-package protocol
+package domain
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCanParseBetFromCSVLine(t *testing.T) {
 	line := "Santiago Lionel,Lorca,30904465,1999-03-17,7574\n"
