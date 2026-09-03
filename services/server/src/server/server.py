@@ -8,7 +8,7 @@ import os
 #
 from lottery import Lottery, Bet
 
-_ECHO_SERVER_MESSAGE_SIZE = 1024
+_ECHO_SERVER_MESSAGE_SIZE = 5056
 _CLIENT_END_MSG = "END"
 _CLIENT_ACK_MSG = "OK"
 STORAGE_PATH = os.getenv("STORAGE_PATH")
@@ -28,31 +28,24 @@ class Server:
             logger.info(action, logger.LogResult.in_progress)
             bets = []
             while True:
-                client_message: bytes = client_socket.recv(_ECHO_SERVER_MESSAGE_SIZE)
-                if not client_message:
-                    logger.info(
-                        action,
-                        logger.LogResult.success,
-                        "messages-amount",
-                        message_amount,
-                    )
-                    return
-
-                client_message_str = client_message.decode()
+                header = safe_socket.recv_all(client_socket, 8)
+                length = int(header.decode())
+                client_message_str = safe_socket.recv_all(client_socket, length).decode()
                 if client_message_str == _CLIENT_END_MSG:
                     break
+                different_bets = (msg for msg in client_message_str.split("\n") if msg)
 
-                csv_fields: list[str] = client_message_str.split(",")
-                print(client_message_str)
-                bet = Bet(
-                    int(csv_fields[0]),
-                    csv_fields[1],
-                    csv_fields[2],
-                    int(csv_fields[3]),
-                    csv_fields[4],
-                    int(csv_fields[5]),
-                )
-                bets.append(bet)
+                for individual_bet in different_bets:
+                    csv_fields: list[str] = individual_bet.split(",")
+                    bet = Bet(
+                        int(csv_fields[0]),
+                        csv_fields[1],
+                        csv_fields[2],
+                        int(csv_fields[3]),
+                        csv_fields[4],
+                        int(csv_fields[5]),
+                    )
+                    bets.append(bet)
 
                 message_amount += 1
                 safe_socket.send_all(client_socket, _CLIENT_ACK_MSG.encode())

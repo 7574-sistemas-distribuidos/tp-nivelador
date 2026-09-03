@@ -3,8 +3,10 @@ package client
 import (
 	"bufio"
 	"encoding/csv"
+	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +22,7 @@ const ECHO_ACK_OK = "OK"
 
 var INPUT_FILE = os.Getenv("INPUT_FILE")
 var OUTPUT_FILE = os.Getenv("OUTPUT_FILE")
+var BATCH_SIZE, _ = strconv.Atoi(os.Getenv("BATCH_SIZE"))
 
 type ClientConfig struct {
 	ServerHost string
@@ -87,14 +90,31 @@ func (client *Client) Run() error {
 		logger.Error("file-read", logger.Fail, "file", INPUT_FILE, "error", err)
 		return err
 	}
+	var batches [][][]string
 
-	for messageId, row := range rows {
+	for i := 0; i < len(rows); i += BATCH_SIZE {
+		end := i + BATCH_SIZE
+
+		if end > len(rows) {
+			end = len(rows)
+		}
+
+		batches = append(batches, rows[i:end])
+	}
+	for messageId, batch := range batches {
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
+		var clientMessage string
 
-		clientMessage := strings.Join(append([]string{client.config.AgencyId}, row...), ",")
+		for _, row := range batch {
+			rowMessage := strings.Join(append([]string{client.config.AgencyId}, row...), ",")
+			clientMessage += rowMessage
+			clientMessage += "\n"
+		}
 
-		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
+		payload := []byte(clientMessage)
+		header := []byte(fmt.Sprintf("%08d", len(payload)))
+		if err := safe_socket.SendAll(client.conn, append(header, payload...)); err != nil {
 			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
@@ -106,7 +126,8 @@ func (client *Client) Run() error {
 		}
 
 	}
-	if err := safe_socket.SendAll(client.conn, []byte(ECHO_END_CONNECTION)); err != nil {
+	endHeader := []byte(fmt.Sprintf("%08d", len(ECHO_END_CONNECTION)))
+	if err := safe_socket.SendAll(client.conn, append(endHeader, []byte(ECHO_END_CONNECTION)...)); err != nil {
 		logger.Error("send-message", logger.Fail)
 		return err
 	}

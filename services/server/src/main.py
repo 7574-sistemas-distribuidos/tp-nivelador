@@ -1,5 +1,6 @@
 import os
 import sys
+from traceback import print_exception
 
 import logger
 import server
@@ -14,6 +15,7 @@ def main():
     try:
         s.run()
     except Exception as e:
+        print_exception(e)
         logger.error("server-run", logger.LogResult.fail, "err", e)
         return 1
     return 0
