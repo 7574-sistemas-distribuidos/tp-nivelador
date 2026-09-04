@@ -3,40 +3,46 @@ import logger
 import safe_socket
 import os
 
-# from services.server.src_frozen.lottery.bet import Bet
-# from services.server.src_frozen.lottery.lottery import Lottery
-#
 from lottery import Lottery, Bet
+from threading import Thread, Condition, Barrier
 
 _ECHO_SERVER_MESSAGE_SIZE = 5056
 _CLIENT_END_MSG = "END"
 _CLIENT_ACK_MSG = "OK"
 STORAGE_PATH = os.getenv("STORAGE_PATH")
+AGENCY_QUORUM_MIN = os.getenv("AGENCY_QUORUM_MIN") or "1"
 
 
 class Server:
     def __init__(self, server_host: str, server_port: int) -> None:
         self.server_host = server_host
         self.server_port = server_port
-
         self.lottery = Lottery(STORAGE_PATH)
+        self.agency_quorum_min = int(AGENCY_QUORUM_MIN)
+        self.finished_agencies = set()
+        self.condition = Condition()
 
     def _handle_client(self, client_socket):
         action = "handle-client"
         message_amount = 0
+        client_id = None
         try:
             logger.info(action, logger.LogResult.in_progress)
             bets = []
             while True:
                 header = safe_socket.recv_all(client_socket, 8)
                 length = int(header.decode())
-                client_message_str = safe_socket.recv_all(client_socket, length).decode()
+                client_message_str = safe_socket.recv_all(
+                    client_socket, length
+                ).decode()
                 if client_message_str == _CLIENT_END_MSG:
+                    self.finished_agencies.add(client_id)
                     break
                 different_bets = (msg for msg in client_message_str.split("\n") if msg)
 
                 for individual_bet in different_bets:
                     csv_fields: list[str] = individual_bet.split(",")
+                    client_id = int(csv_fields[0])
                     bet = Bet(
                         int(csv_fields[0]),
                         csv_fields[1],
@@ -49,6 +55,14 @@ class Server:
 
                 message_amount += 1
                 safe_socket.send_all(client_socket, _CLIENT_ACK_MSG.encode())
+
+            with self.condition:
+                if len(self.finished_agencies) >= self.agency_quorum_min:
+                    self.condition.notify_all()
+                else:
+                    self.condition.wait_for(
+                        lambda: len(self.finished_agencies) >= self.agency_quorum_min
+                    )
 
             self.lottery.store_bets(bets)
             self.lottery.load_bets()
@@ -68,6 +82,7 @@ class Server:
 
     def run(self):
         action = "accept-connection"
+        client_threads = []
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.bind((self.server_host, self.server_port))
             server_socket.listen()
@@ -80,4 +95,6 @@ class Server:
                     raise e
                 logger.info(action, logger.LogResult.success)
 
-                self._handle_client(client_socket)
+                thread = Thread(target=self._handle_client, args=(client_socket,))
+                thread.start()
+                client_threads.append(thread)

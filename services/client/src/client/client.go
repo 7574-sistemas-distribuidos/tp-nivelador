@@ -85,33 +85,28 @@ func (client *Client) Run() error {
 	defer out.Close()
 
 	csvReader := csv.NewReader(f)
-	rows, err := csvReader.ReadAll()
-	if err != nil {
-		logger.Error("file-read", logger.Fail, "file", INPUT_FILE, "error", err)
-		return err
-	}
-	var batches [][][]string
+	messageId := 0
+	eof := false
+	for eof == false {
+		var batch [][]string
+		for i := 0; i < BATCH_SIZE; i += 1 {
 
-	for i := 0; i < len(rows); i += BATCH_SIZE {
-		end := i + BATCH_SIZE
-
-		if end > len(rows) {
-			end = len(rows)
+			row, _ := csvReader.Read()
+			if row == nil {
+				eof = true
+				break
+			}
+			batch = append(batch, row)
 		}
 
-		batches = append(batches, rows[i:end])
-	}
-	for messageId, batch := range batches {
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
 		var clientMessage string
-
 		for _, row := range batch {
 			rowMessage := strings.Join(append([]string{client.config.AgencyId}, row...), ",")
 			clientMessage += rowMessage
 			clientMessage += "\n"
 		}
-
 		payload := []byte(clientMessage)
 		header := []byte(fmt.Sprintf("%08d", len(payload)))
 		if err := safe_socket.SendAll(client.conn, append(header, payload...)); err != nil {
@@ -124,8 +119,10 @@ func (client *Client) Run() error {
 			logger.Error("recv-response", logger.Fail, messageArgs...)
 			return err
 		}
+		messageId += 1
 
 	}
+
 	endHeader := []byte(fmt.Sprintf("%08d", len(ECHO_END_CONNECTION)))
 	if err := safe_socket.SendAll(client.conn, append(endHeader, []byte(ECHO_END_CONNECTION)...)); err != nil {
 		logger.Error("send-message", logger.Fail)
