@@ -1,9 +1,9 @@
 import socket
-
 import logger
+from domain.message import Message
+from domain.message_header import MessageHeader, MessageType
 import protocol
-import safe_socket
-from protocol import MessageType
+from domain.parser import parse_bet
 
 
 class Server:
@@ -32,28 +32,28 @@ class Server:
             )
             raise e
 
-    def _dispatch(self, client_socket: socket.socket, header: protocol.Header, payload: bytes) -> None:
+    def _dispatch(self, client_socket: socket.socket, header: MessageHeader, payload: bytes) -> None:
         match header.type:
             case MessageType.REGISTER_AGENCY:
-                self._handle_register_agency(payload)
+                self._handle_register_agency(client_socket)
             case MessageType.BET:
-                self._handle_bet(payload)
+                self._handle_bet(client_socket, payload)
             case MessageType.AWAITING_WINNERS:
-                self._handle_awaiting_winners(payload)
+                self._handle_awaiting_winners(client_socket, payload)
             case _:
                 raise ValueError(f"unexpected message type: {header.type}")
 
-        protocol.send_message(client_socket, MessageType.ACK)
 
-    def _handle_register_agency(self, payload: bytes) -> None:
-        # TODO: decodificar agency_id del payload y asociarlo a la conexión
-        pass
+    def _handle_register_agency(self, client_socket: socket.socket) -> None:
 
-    def _handle_bet(self, payload: bytes) -> None:
-        # TODO: parsear la apuesta del payload y guardarla
-        pass
+        protocol.send_message(client_socket, Message.ack())
 
-    def _handle_awaiting_winners(self, payload: bytes) -> None:
+    def _handle_bet(self, client_socket: socket.socket, payload: bytes) -> None:
+        bet = parse_bet(payload)
+
+        protocol.send_message(client_socket, Message.ack())
+
+    def _handle_awaiting_winners(self, client_socket: socket.socket, payload: bytes) -> None:
         # TODO: marcar que esta agencia está esperando ganadores
         # (el envío real de MessageTypeWinner queda para después)
         pass
@@ -71,4 +71,11 @@ class Server:
                     logger.error(action, logger.LogResult.fail)
                     raise
                 logger.info(action, logger.LogResult.success)
-                self._handle_client(client_socket)
+                try:
+                    self._handle_client(client_socket)
+                except Exception as e:
+                    # Un cliente que falla no debe tumbar el servidor:
+                    # el detalle ya se logueo en _handle_client, seguimos aceptando.
+                    logger.error(
+                        "drop-client-connection", logger.LogResult.fail, "err", e
+                    )

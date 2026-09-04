@@ -1,8 +1,5 @@
 import struct
 from enum import IntEnum
-from typing import Tuple
-
-import safe_socket
 
 
 class MessageType(IntEnum):
@@ -20,7 +17,7 @@ HEADER_SIZE = MESSAGE_TYPE_SIZE + PAYLOAD_LEN_SIZE
 _HEADER_STRUCT_FORMAT = ">BI"  # big-endian: u8 (type) + u32 (payload_len)
 
 
-class Header:
+class MessageHeader:
     def __init__(self, msg_type: MessageType, payload_len: int) -> None:
         self.type = msg_type
         self.payload_len = payload_len
@@ -29,11 +26,11 @@ class Header:
         return struct.pack(_HEADER_STRUCT_FORMAT, self.type, self.payload_len)
 
     @staticmethod
-    def deserialize(buf: bytes) -> "Header":
+    def deserialize(buf: bytes) -> "MessageHeader":
         if len(buf) != HEADER_SIZE:
             raise ValueError(
                 f"invalid header size: expected {HEADER_SIZE} bytes, got {len(buf)}"
             )
         msg_type_value, payload_len = struct.unpack(_HEADER_STRUCT_FORMAT, buf)
-        return Header(MessageType(msg_type_value), payload_len)
+        return MessageHeader(MessageType(msg_type_value), payload_len)
 
