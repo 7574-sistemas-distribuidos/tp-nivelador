@@ -1,17 +1,24 @@
+import os
 import socket
+
 import logger
+import lottery
 from domain.message import Message
 from domain.message_header import MessageHeader, MessageType
 import protocol
-from domain.parser import parse_bet
+from domain.parser import parse_agency_id, parse_bet
+from lottery import Lottery
+
+BETS_FILE_NAME = "bets.csv"
 
 
 class Server:
-    def __init__(self, server_host: str, server_port: int) -> None:
+    def __init__(self, server_host: str, server_port: int, storage_dir: str) -> None:
         self.server_host = server_host
         self.server_port = server_port
+        self.lottery = Lottery(os.path.join(storage_dir, BETS_FILE_NAME))
 
-    def _handle_client(self, client_socket: socket.socket) -> None:
+    def _handle_agency_connection(self, client_socket: socket.socket) -> None:
         action = "handle-client"
         message_amount = 0
         try:
@@ -34,8 +41,6 @@ class Server:
 
     def _dispatch(self, client_socket: socket.socket, header: MessageHeader, payload: bytes) -> None:
         match header.type:
-            case MessageType.REGISTER_AGENCY:
-                self._handle_register_agency(client_socket)
             case MessageType.BET:
                 self._handle_bet(client_socket, payload)
             case MessageType.AWAITING_WINNERS:
@@ -44,19 +49,44 @@ class Server:
                 raise ValueError(f"unexpected message type: {header.type}")
 
 
-    def _handle_register_agency(self, client_socket: socket.socket) -> None:
-
-        protocol.send_message(client_socket, Message.ack())
-
     def _handle_bet(self, client_socket: socket.socket, payload: bytes) -> None:
         bet = parse_bet(payload)
-
+        self.lottery.store_bets([bet])
         protocol.send_message(client_socket, Message.ack())
 
+    def _receive_ack(self, client_socket: socket.socket) -> None:
+        header, _ = protocol.receive_message(client_socket)
+        if header.type != MessageType.ACK:
+            raise ValueError(f"expected ack message type, got {header.type}")
+
     def _handle_awaiting_winners(self, client_socket: socket.socket, payload: bytes) -> None:
-        # TODO: marcar que esta agencia está esperando ganadores
-        # (el envío real de MessageTypeWinner queda para después)
-        pass
+        action = "send-winners"
+        agency_id = parse_agency_id(payload)
+        winners_amount = 0
+
+        logger.info(action, logger.LogResult.in_progress, "agency-id", agency_id)
+        # Se confirma el pedido antes de abrir el stream: todo mensaje recibido lleva ACK.
+        protocol.send_message(client_socket, Message.ack())
+
+        for bet in self.lottery.load_bets():
+            if self.lottery.has_won(bet) and bet.agency_id == agency_id:
+                protocol.send_message(client_socket, Message.winner(bet))
+                self._receive_ack(client_socket)
+                winners_amount += 1
+
+        # El FINISH y su ACK cierran el intercambio: sin leer esa respuesta el socket
+        # se cerraria con datos pendientes y el cliente veria un reset en vez de un EOF.
+        protocol.send_message(client_socket, Message.finish())
+        self._receive_ack(client_socket)
+        logger.info(
+            action,
+            logger.LogResult.success,
+            "agency-id",
+            agency_id,
+            "winners-amount",
+            winners_amount,
+        )
+
 
     def run(self) -> None:
         action = "accept-connection"
@@ -72,10 +102,8 @@ class Server:
                     raise
                 logger.info(action, logger.LogResult.success)
                 try:
-                    self._handle_client(client_socket)
+                    self._handle_agency_connection(client_socket)
                 except Exception as e:
-                    # Un cliente que falla no debe tumbar el servidor:
-                    # el detalle ya se logueo en _handle_client, seguimos aceptando.
                     logger.error(
                         "drop-client-connection", logger.LogResult.fail, "err", e
                     )

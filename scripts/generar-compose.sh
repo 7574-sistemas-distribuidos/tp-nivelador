@@ -34,6 +34,8 @@ fi
 
 SERVER_HOST="server"
 SERVER_PORT="5678"
+SERVER_STORAGE_DIR="/data"
+SERVER_STORAGE_HOST_DIR="./data"
 NETWORK_NAME="tp_0_network"
 
 {
@@ -50,6 +52,9 @@ services:
       - PYTHONUNBUFFERED=1
       - SERVER_HOST=${SERVER_HOST}
       - SERVER_PORT=${SERVER_PORT}
+      - SERVER_STORAGE_DIR=${SERVER_STORAGE_DIR}
+    volumes:
+      - ${SERVER_STORAGE_HOST_DIR}:${SERVER_STORAGE_DIR}
 YAML
 
     for ((i = 0; i < CLIENTS; i++)); do

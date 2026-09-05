@@ -3,11 +3,11 @@ from enum import IntEnum
 
 
 class MessageType(IntEnum):
-    REGISTER_AGENCY = 1
-    ACK = 2
-    BET = 3
-    AWAITING_WINNERS = 4
-    WINNER = 5
+    ACK = 1
+    BET = 2
+    AWAITING_WINNERS = 3
+    WINNER = 4
+    FINISH = 5
 
 
 MESSAGE_TYPE_SIZE = 1

@@ -7,21 +7,12 @@ type Message struct {
 type MessageType uint8
 
 const (
-	MessageTypeRegisterAgency MessageType = iota + 1
-	MessageTypeAck
+	MessageTypeAck MessageType = iota + 1
 	MessageTypeBet
 	MessageTypeAwaitingWinners
+	MessageTypeWinner
+	MessageTypeFinish
 )
-
-func RegisterAgencyMessage(agency string) Message {
-	return Message{
-		Header: MessageHeader{
-			Type:       MessageTypeRegisterAgency,
-			PayloadLen: uint32(len(agency)),
-		},
-		Payload: []byte(agency),
-	}
-}
 
 func AckMessage() Message {
 	return Message{
@@ -33,8 +24,8 @@ func AckMessage() Message {
 	}
 }
 
-func BetMessage(bet Bet) Message {
-	payload := bet.Serialize()
+func BetMessage(agencyId string, bet Bet) Message {
+	payload := bet.Serialize(agencyId)
 	return Message{
 		Header: MessageHeader{
 			Type:       MessageTypeBet,
@@ -44,12 +35,13 @@ func BetMessage(bet Bet) Message {
 	}
 }
 
-func AwaitingWinnersMessage() Message {
+func AwaitingWinnersMessage(agencyId string) Message {
+	payload := []byte(agencyId)
 	return Message{
 		Header: MessageHeader{
 			Type:       MessageTypeAwaitingWinners,
-			PayloadLen: 0,
+			PayloadLen: uint32(len(payload)),
 		},
-		Payload: nil,
+		Payload: payload,
 	}
 }

@@ -2,7 +2,9 @@ package client
 
 import (
 	"bufio"
+	"encoding/csv"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"time"
@@ -81,11 +83,6 @@ func (client *Client) Run() error {
 	}
 	defer outputFile.Close()
 
-	registerErr := client.registerAgency(client.config.AgencyId)
-	if registerErr != nil {
-		return registerErr
-	}
-
 	sendBetsErr := client.sendBets(inputFile)
 	if sendBetsErr != nil {
 		return sendBetsErr
@@ -96,6 +93,15 @@ func (client *Client) Run() error {
 		return awaitingWinnersErr
 	}
 
+	winners, winnersErr := client.readWinners()
+	if winnersErr != nil {
+		return winnersErr
+	}
+
+	if storeErr := client.storeWinners(outputFile, winners); storeErr != nil {
+		return storeErr
+	}
+
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
 
 	return nil
@@ -104,7 +110,6 @@ func (client *Client) Run() error {
 func (client *Client) readInputFile() (*os.File, error) {
 	const action = "open-input-file"
 	const inputFileArg = "input-file"
-	logger.Info(action, logger.InProgress, inputFileArg, client.config.InputFile)
 
 	file, err := os.Open(client.config.InputFile)
 	if err != nil {
@@ -119,7 +124,6 @@ func (client *Client) readInputFile() (*os.File, error) {
 func (client *Client) createOutputFile() (*os.File, error) {
 	const action = "create-output-file"
 	const outputFileArg = "output-file"
-	logger.Info(action, logger.InProgress, outputFileArg, client.config.OutputFile)
 
 	outputFile, err := os.Create(client.config.OutputFile)
 	if err != nil {
@@ -129,16 +133,6 @@ func (client *Client) createOutputFile() (*os.File, error) {
 
 	logger.Info(action, logger.Success, outputFileArg, client.config.OutputFile)
 	return outputFile, nil
-}
-
-func (client *Client) registerAgency(agencyId string) error {
-	return client.step("register-agency", func() error {
-		message := domain.RegisterAgencyMessage(agencyId)
-		if err := protocol.SendMessage(client.conn, message); err != nil {
-			return err
-		}
-		return client.readAck()
-	}, "agency-id", agencyId)
 }
 
 func (client *Client) sendBets(file *os.File) error {
@@ -165,7 +159,7 @@ func (client *Client) sendBets(file *os.File) error {
 
 func (client *Client) sendBet(bet domain.Bet, betId int) error {
 	return client.step("send-bet", func() error {
-		message := domain.BetMessage(bet)
+		message := domain.BetMessage(client.config.AgencyId, bet)
 		if err := protocol.SendMessage(client.conn, message); err != nil {
 			return err
 		}
@@ -175,12 +169,16 @@ func (client *Client) sendBet(bet domain.Bet, betId int) error {
 
 func (client *Client) sendAwaitingWinners() error {
 	return client.step("send-awaiting-winners", func() error {
-		message := domain.AwaitingWinnersMessage()
+		message := domain.AwaitingWinnersMessage(client.config.AgencyId)
 		if err := protocol.SendMessage(client.conn, message); err != nil {
 			return err
 		}
 		return client.readAck()
 	}, "agency-id", client.config.AgencyId)
+}
+
+func (client *Client) sendAck() error {
+	return protocol.SendMessage(client.conn, domain.AckMessage())
 }
 
 func (client *Client) readAck() error {
@@ -194,6 +192,55 @@ func (client *Client) readAck() error {
 		}
 		return nil
 	})
+}
+
+func (client *Client) readWinners() ([]domain.Bet, error) {
+	var winners []domain.Bet
+
+	err := client.step("read-winners", func() error {
+		for {
+			header, payload, err := protocol.ReceiveMessage(client.conn)
+			if err != nil {
+				return err
+			}
+
+			switch header.Type {
+			case domain.MessageTypeWinner:
+				bet, betErr := domain.ParseBetLine(string(payload))
+				if betErr != nil {
+					return betErr
+				}
+				winners = append(winners, bet)
+
+				if ackErr := client.sendAck(); ackErr != nil {
+					return ackErr
+				}
+			case domain.MessageTypeFinish:
+				// Se confirma el cierre para que el server no corte sobre un socket a medio leer.
+				return client.sendAck()
+			default:
+				return fmt.Errorf("unexpected message type while reading winners: %d", header.Type)
+			}
+		}
+	}, "agency-id", client.config.AgencyId)
+
+	// Ante un error el stream quedo incompleto: se descartan las parciales.
+	if err != nil {
+		return nil, err
+	}
+	return winners, nil
+}
+
+func (client *Client) storeWinners(file *os.File, winners []domain.Bet) error {
+	return client.step("store-winners", func() error {
+		rows := make([][]string, 0, len(winners))
+		for _, winner := range winners {
+			rows = append(rows, winner.Fields())
+		}
+
+		// WriteAll hace el Flush y devuelve el error de escritura.
+		return csv.NewWriter(file).WriteAll(rows)
+	}, "winners-amount", len(winners))
 }
 
 func (client *Client) step(action string, fn func() error, args ...any) error {
