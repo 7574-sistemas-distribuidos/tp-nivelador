@@ -1,22 +1,20 @@
-import os
 import socket
 
 import logger
-import lottery
+import protocol
 from domain.message import Message
 from domain.message_header import MessageHeader, MessageType
-import protocol
 from domain.parser import parse_agency_id, parse_bet
-from lottery import Lottery
-
-BETS_FILE_NAME = "bets.csv"
+from service import LotteryService
 
 
 class Server:
-    def __init__(self, server_host: str, server_port: int, storage_dir: str) -> None:
+    def __init__(
+        self, server_host: str, server_port: int, lottery_service: LotteryService
+    ) -> None:
         self.server_host = server_host
         self.server_port = server_port
-        self.lottery = Lottery(os.path.join(storage_dir, BETS_FILE_NAME))
+        self.lottery_service = lottery_service
 
     def _handle_agency_connection(self, client_socket: socket.socket) -> None:
         action = "handle-client"
@@ -52,7 +50,7 @@ class Server:
 
     def _handle_bet(self, client_socket: socket.socket, payload: bytes) -> None:
         bet = parse_bet(payload)
-        self.lottery.store_bets([bet])
+        self.lottery_service.register_bets([bet])
         protocol.send_message(client_socket, Message.ack())
 
     def _receive_ack(self, client_socket: socket.socket) -> None:
@@ -68,11 +66,10 @@ class Server:
         logger.info(action, logger.LogResult.in_progress, "agency-id", agency_id)
         protocol.send_message(client_socket, Message.ack())
 
-        for bet in self.lottery.load_bets():
-            if self.lottery.has_won(bet) and bet.agency_id == agency_id:
-                protocol.send_message(client_socket, Message.winner(bet))
-                self._receive_ack(client_socket)
-                winners_amount += 1
+        for bet in self.lottery_service.winners_for(agency_id):
+            protocol.send_message(client_socket, Message.winner(bet))
+            self._receive_ack(client_socket)
+            winners_amount += 1
 
         protocol.send_message(client_socket, Message.finish())
         self._receive_ack(client_socket)

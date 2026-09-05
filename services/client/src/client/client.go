@@ -3,15 +3,13 @@ package client
 import (
 	"bufio"
 	"encoding/csv"
-	"errors"
-	"fmt"
 	"net"
 	"os"
 	"time"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/domain"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
-	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/service"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
@@ -29,8 +27,9 @@ type ClientConfig struct {
 }
 
 type Client struct {
-	conn   net.Conn
-	config ClientConfig
+	conn    net.Conn
+	service *service.LotteryService
+	config  ClientConfig
 }
 
 func NewClient(config ClientConfig) (*Client, error) {
@@ -40,7 +39,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 		return nil, err
 	}
 
-	client := &Client{conn: conn, config: config}
+	client := &Client{
+		conn:    conn,
+		service: service.NewLotteryService(conn, config.AgencyId),
+		config:  config,
+	}
 	return client, nil
 }
 
@@ -88,7 +91,7 @@ func (client *Client) Run() error {
 		return sendBetsErr
 	}
 
-	awaitingWinnersErr := client.sendAwaitingWinners()
+	awaitingWinnersErr := client.notifyAwaitingWinners()
 	if awaitingWinnersErr != nil {
 		return awaitingWinnersErr
 	}
@@ -159,72 +162,25 @@ func (client *Client) sendBets(file *os.File) error {
 
 func (client *Client) sendBet(bet domain.Bet, betId int) error {
 	return client.step("send-bet", func() error {
-		message := domain.BetMessage(client.config.AgencyId, bet)
-		if err := protocol.SendMessage(client.conn, message); err != nil {
-			return err
-		}
-		return client.readAck()
+		return client.service.SendBet(bet)
 	}, "bet-id", betId)
 }
 
-func (client *Client) sendAwaitingWinners() error {
+func (client *Client) notifyAwaitingWinners() error {
 	return client.step("send-awaiting-winners", func() error {
-		message := domain.AwaitingWinnersMessage(client.config.AgencyId)
-		if err := protocol.SendMessage(client.conn, message); err != nil {
-			return err
-		}
-		return client.readAck()
+		return client.service.NotifyAwaitingWinners()
 	}, "agency-id", client.config.AgencyId)
-}
-
-func (client *Client) sendAck() error {
-	return protocol.SendMessage(client.conn, domain.AckMessage())
-}
-
-func (client *Client) readAck() error {
-	return client.step("read-ack", func() error {
-		header, _, err := protocol.ReceiveMessage(client.conn)
-		if err != nil {
-			return err
-		}
-		if header.Type != domain.MessageTypeAck {
-			return errors.New("expected ack message type, got different type")
-		}
-		return nil
-	})
 }
 
 func (client *Client) readWinners() ([]domain.Bet, error) {
 	var winners []domain.Bet
 
 	err := client.step("read-winners", func() error {
-		for {
-			header, payload, err := protocol.ReceiveMessage(client.conn)
-			if err != nil {
-				return err
-			}
-
-			switch header.Type {
-			case domain.MessageTypeWinner:
-				bet, betErr := domain.ParseBetLine(string(payload))
-				if betErr != nil {
-					return betErr
-				}
-				winners = append(winners, bet)
-
-				if ackErr := client.sendAck(); ackErr != nil {
-					return ackErr
-				}
-			case domain.MessageTypeFinish:
-				// Se confirma el cierre para que el server no corte sobre un socket a medio leer.
-				return client.sendAck()
-			default:
-				return fmt.Errorf("unexpected message type while reading winners: %d", header.Type)
-			}
-		}
+		var readErr error
+		winners, readErr = client.service.ReadWinners()
+		return readErr
 	}, "agency-id", client.config.AgencyId)
 
-	// Ante un error el stream quedo incompleto: se descartan las parciales.
 	if err != nil {
 		return nil, err
 	}

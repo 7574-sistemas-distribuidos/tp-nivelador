@@ -1,24 +1,24 @@
 package protocol
 
 import (
-	"net"
+	"io"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/domain"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
 
-func SendMessage(conn net.Conn, message domain.Message) error {
-	if err := safe_socket.SendAll(conn, message.Header.Serialize()); err != nil {
+func SendMessage(writer io.Writer, message domain.Message) error {
+	if err := safe_socket.SendAll(writer, message.Header.Serialize()); err != nil {
 		return err
 	}
-	if err := safe_socket.SendAll(conn, message.Payload); err != nil {
+	if err := safe_socket.SendAll(writer, message.Payload); err != nil {
 		return err
 	}
 	return nil
 }
 
-func ReceiveMessage(conn net.Conn) (domain.MessageHeader, []byte, error) {
-	headerBytes, err := safe_socket.RecvAll(conn, domain.HEADER_SIZE)
+func ReceiveMessage(reader io.Reader) (domain.MessageHeader, []byte, error) {
+	headerBytes, err := safe_socket.RecvAll(reader, domain.HEADER_SIZE)
 	if err != nil {
 		return domain.MessageHeader{}, nil, err
 	}
@@ -27,7 +27,7 @@ func ReceiveMessage(conn net.Conn) (domain.MessageHeader, []byte, error) {
 		return domain.MessageHeader{}, nil, err
 	}
 
-	payload, err := safe_socket.RecvAll(conn, int(header.PayloadLen))
+	payload, err := safe_socket.RecvAll(reader, int(header.PayloadLen))
 	if err != nil {
 		return header, nil, err
 	}
