@@ -21,6 +21,7 @@ class Server:
     def _handle_agency_connection(self, client_socket: socket.socket) -> None:
         action = "handle-client"
         message_amount = 0
+
         try:
             logger.info(action, logger.LogResult.in_progress)
             with client_socket:
@@ -65,7 +66,6 @@ class Server:
         winners_amount = 0
 
         logger.info(action, logger.LogResult.in_progress, "agency-id", agency_id)
-        # Se confirma el pedido antes de abrir el stream: todo mensaje recibido lleva ACK.
         protocol.send_message(client_socket, Message.ack())
 
         for bet in self.lottery.load_bets():
@@ -74,8 +74,6 @@ class Server:
                 self._receive_ack(client_socket)
                 winners_amount += 1
 
-        # El FINISH y su ACK cierran el intercambio: sin leer esa respuesta el socket
-        # se cerraria con datos pendientes y el cliente veria un reset en vez de un EOF.
         protocol.send_message(client_socket, Message.finish())
         self._receive_ack(client_socket)
         logger.info(
