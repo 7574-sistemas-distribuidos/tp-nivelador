@@ -81,8 +81,7 @@ func EncodeAck() []byte {
 	return newMessage(Ack, 0)
 }
 
-func EncodeBet(bet BetMessage) ([]byte, error) {
-	var buf []byte
+func EncodeBet(buf []byte, bet BetMessage) ([]byte, error) {
 	buf = append(buf, bet.Agency)
 
 	buf, err := appendPrefixedField(buf, bet.Name)
@@ -103,14 +102,12 @@ func EncodeBet(bet BetMessage) ([]byte, error) {
 	return buf, nil
 }
 
-func AppendBatch(buf []byte, encodedBets [][]byte) ([]byte, error) {
+func AppendBatch(buf []byte, payload []byte) ([]byte, error) {
 	headerPos := len(buf)
 	buf = append(buf, Batch, 0, 0)
 	payloadStart := len(buf)
 
-	for _, encodedBet := range encodedBets {
-		buf = append(buf, encodedBet...)
-	}
+	buf = append(buf, payload...)
 
 	payloadSize := len(buf) - payloadStart
 
