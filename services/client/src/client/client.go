@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"os"
 	"time"
@@ -106,7 +107,7 @@ func (client *Client) Run() error {
 
 		if string(responseBuffer) != line {
 			logger.Error("check-response", logger.Fail, messageArgs...)
-			return err
+			return fmt.Errorf("server failed to echo message with id %d", messageId)
 		}
 
 		readLine := string(responseBuffer)
