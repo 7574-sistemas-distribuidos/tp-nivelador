@@ -264,27 +264,42 @@ func (client *Client) receiveWinners() error {
 }
 
 func (client *Client) parseRowIntoBet(trimmed string) (protocol.BetMessage, error) {
-	row := strings.Split(trimmed, ",")
-	if len(row) != 5 {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos y se encontraron %d: %q", len(row), trimmed)
+	name, rest, ok := strings.Cut(trimmed, ",")
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
+	}
+	lastname, rest, ok := strings.Cut(rest, ",")
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
+	}
+	documentoStr, rest, ok := strings.Cut(rest, ",")
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
+	}
+	birthdate, numberStr, ok := strings.Cut(rest, ",")
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
+	}
+	if strings.Contains(numberStr, ",") {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se encontraron mas de 5 campos: %q", trimmed)
 	}
 
-	documento, err := strconv.ParseUint(row[2], 10, 32)
+	documento, err := strconv.ParseUint(documentoStr, 10, 32)
 	if err != nil {
 		return protocol.BetMessage{}, err
 	}
 
-	numberValue, err := strconv.ParseUint(row[4], 10, 32)
+	numberValue, err := strconv.ParseUint(numberStr, 10, 32)
 	if err != nil {
 		return protocol.BetMessage{}, err
 	}
 
 	bet := protocol.BetMessage{
 		Agency:    client.agency,
-		Name:      row[0],
-		Lastname:  row[1],
+		Name:      name,
+		Lastname:  lastname,
 		Document:  uint32(documento),
-		Birthdate: row[3],
+		Birthdate: birthdate,
 		Number:    uint32(numberValue),
 	}
 	return bet, nil
