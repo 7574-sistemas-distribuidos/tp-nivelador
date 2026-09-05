@@ -18,10 +18,15 @@ services:
     container_name: client_0
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID=0
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-0.csv
+      - OUTPUT_FILE=/output/output-0.csv
 
   client_1:
     build:
@@ -30,10 +35,15 @@ services:
     container_name: client_1
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID=1
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-1.csv
+      - OUTPUT_FILE=/output/output-1.csv
 
   client_2:
     build:
@@ -42,10 +52,15 @@ services:
     container_name: client_2
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID=2
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-2.csv
+      - OUTPUT_FILE=/output/output-2.csv
 
   client_3:
     build:
@@ -54,10 +69,15 @@ services:
     container_name: client_3
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID=3
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-3.csv
+      - OUTPUT_FILE=/output/output-3.csv
 
   client_4:
     build:
@@ -66,10 +86,15 @@ services:
     container_name: client_4
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID=4
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-4.csv
+      - OUTPUT_FILE=/output/output-4.csv
 
   client_5:
     build:
@@ -78,7 +103,12 @@ services:
     container_name: client_5
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID=5
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-5.csv
+      - OUTPUT_FILE=/output/output-5.csv

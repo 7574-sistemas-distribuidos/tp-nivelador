@@ -1,12 +1,14 @@
 import sys
 
-
+## TODO: Refactor to not make this templates drift apart from the actual docker-compose.yml file
 SERVER_TEMPLATE = """services:
   server:
     build:
       context: ./services/server
       dockerfile: Dockerfile
     container_name: server
+    ports:
+      - 5678:5678
     environment:
       - PYTHONUNBUFFERED=1
       - SERVER_HOST=server
@@ -21,10 +23,15 @@ CLIENT_TEMPLATE = """
     container_name: {container_name}
     depends_on:
       - server
+    volumes:
+      - ./input:/input:ro
+      - ./output:/output
     environment:
       - AGENCY_ID={client_id}
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - INPUT_FILE=/input/input-{client_id}.csv
+      - OUTPUT_FILE=/output/output-{client_id}.csv
 """
 
 
