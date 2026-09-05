@@ -1,7 +1,9 @@
 package client
 
 import (
+	"bufio"
 	"net"
+	"os"
 	"time"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
@@ -19,6 +21,8 @@ type ClientConfig struct {
 	ServerHost string
 	ServerPort string
 	AgencyId   string
+	InputFile  string
+	OutputFile string
 }
 
 type Client struct {
@@ -62,13 +66,36 @@ func (client *Client) Run() error {
 	const mainAction = "test-echo-server"
 	defer client.conn.Close()
 
-	for messageId := range ECHO_CLIENT_MESSAGE_AMOUNT {
+	inputFile, err := os.Open(client.config.InputFile)
+	if err != nil {
+		logger.Error("open-input-file", logger.Fail, "err", err)
+		return err
+	}
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(client.config.OutputFile)
+	if err != nil {
+		logger.Error("create-output-file", logger.Fail, "err", err)
+		return err
+	}
+
+	writer := bufio.NewWriter(outputFile)
+	defer func() {
+		writer.Flush()
+		outputFile.Close()
+	}()
+
+	scanner := bufio.NewScanner(inputFile)
+
+	messageId := 0
+
+	for scanner.Scan() {
+		line := scanner.Text() + "\n"
+		messageId++
 		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
 		logger.Info(mainAction, logger.InProgress, messageArgs...)
 
-		clientMessage := client.config.AgencyId
-
-		if err := safe_socket.SendAll(client.conn, []byte(clientMessage)); err != nil {
+		if err := safe_socket.SendAll(client.conn, []byte(line)); err != nil {
 			logger.Error("send-message", logger.Fail, messageArgs...)
 			return err
 		}
@@ -79,12 +106,18 @@ func (client *Client) Run() error {
 			return err
 		}
 
-		if string(responseBuffer) != clientMessage {
+		if string(responseBuffer) != line {
 			logger.Error("check-response", logger.Fail, messageArgs...)
 			return err
 		}
 
-		time.Sleep(ECHO_CLIENT_MESSAGE_DELAY_MS * time.Millisecond)
+		readLine := string(responseBuffer)
+
+		_, err = writer.WriteString(readLine)
+		if err != nil {
+			logger.Error("write-output-file", logger.Fail, messageArgs...)
+			return err
+		}
 	}
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
 
