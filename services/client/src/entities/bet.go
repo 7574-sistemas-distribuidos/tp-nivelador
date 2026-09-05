@@ -45,7 +45,7 @@ func NewBetFromRecord(record []string) (Bet, error) {
 	}, nil
 }
 
-func SerializeBet(p Bet, agencyId string) ([]byte, error) {
+func SerializeBet(p Bet, agencyId uint8) ([]byte, error) {
 	if len(p.FirstName) > 255 || len(p.LastName) > 255 {
 		logger.Error("SerializeBetFirstNameAndLastName", logger.Fail, " FirstName or LastName exceeds 255 characters")
 		return nil, errors.New("FirstName or LastName exceeds 255 characters")
@@ -53,13 +53,7 @@ func SerializeBet(p Bet, agencyId string) ([]byte, error) {
 
 	var payload []byte
 
-	agencyIdParsed, err := strconv.ParseUint(agencyId, 10, 8)
-
-	if err != nil {
-		logger.Error("SerializeBet", logger.Fail, " Failed to parse AgencyId: ", err)
-		return nil, err
-	}
-	payload = append(payload, byte(agencyIdParsed))
+	payload = append(payload, agencyId)
 
 	payload = append(payload, uint8(len(p.FirstName)))
 	payload = append(payload, p.FirstName...)

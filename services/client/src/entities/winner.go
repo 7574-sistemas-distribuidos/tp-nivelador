@@ -2,6 +2,7 @@ package entities
 
 import (
 	"encoding/binary"
+	"strconv"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 )
@@ -35,5 +36,15 @@ func DeserializeWinner(data []byte) (Winner, error) {
 		LastName:  lastName,
 		social_id: social_id,
 	}, nil
+
+}
+
+func WinnerToRecord(winner Winner) []string {
+	var record []string
+	record = append(record, winner.FirstName)
+	record = append(record, winner.LastName)
+	tmp := strconv.FormatUint(uint64(winner.social_id), 10)
+	record = append(record, tmp)
+	return record
 
 }

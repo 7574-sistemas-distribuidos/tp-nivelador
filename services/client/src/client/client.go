@@ -104,9 +104,11 @@ func (client *Client) Run() error {
 	}
 	recordAmount := len(records)
 	logger.Info("read-csv-file", logger.Success, "records", recordAmount)
-	protocol.SendMessages(client.conn, records, client.config.AgencyId)
-
-	var receivedRecords [][]string
+	receivedRecords, err := protocol.SendMessages(client.conn, records, client.config.AgencyId)
+	if err != nil {
+		logger.Error("send-messages", logger.Fail, "err", err)
+		return err
+	}
 	if err := filehandler.WriteCSVFile(client.config.OutputDir+"/output-"+client.config.AgencyId+".csv", receivedRecords); err != nil {
 		logger.Error("write-csv-file", logger.Fail, "err", err)
 		return err

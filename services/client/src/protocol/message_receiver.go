@@ -14,7 +14,11 @@ func receiveWinnersMessage(socket io.Reader) ([]byte, error) {
 		return nil, err
 	}
 	message_length := binary.BigEndian.Uint32(message_length_bytes)
-	return safe_socket.RecvAll(socket, int(message_length))
+	winning_bets, err := safe_socket.RecvAll(socket, int(message_length))
+	if err != nil {
+		return nil, err
+	}
+	return winning_bets, nil
 }
 
 func ReceiveMessage(socket io.Reader) ([]byte, error) {
