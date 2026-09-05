@@ -1,9 +1,9 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -122,40 +122,38 @@ func (client *Client) sendBets() error {
 	}
 
 	defer inputFile.Close()
-	reader := bufio.NewReader(inputFile)
+
+	scanner := bufio.NewScanner(inputFile)
 	batchBets := 0
 	batchBytes := 0
 	var batch []byte
 	var encodedNewBet []byte
 
-	for {
-		line, readErr := reader.ReadString('\n')
-		trimmed := strings.TrimRight(line, "\r\n")
-
-		if trimmed != "" {
-			bet, err := client.parseRowIntoBet(trimmed)
-			if err != nil {
-				return err
-			}
-
-			encodedNewBet, err = protocol.EncodeBet(encodedNewBet[:0], bet)
-			if err != nil {
-				return err
-			}
-
-			batch, batchBytes, batchBets, err = client.accumulateBatch(batch, batchBets, batchBytes, encodedNewBet)
-			if err != nil {
-				return err
-			}
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
 		}
 
-		if readErr == io.EOF {
-			break
+		bet, err := client.parseRowIntoBet(line)
+		if err != nil {
+			return err
 		}
-		if readErr != nil {
-			logger.Error("read-input", logger.Fail)
-			return readErr
+
+		encodedNewBet, err = protocol.EncodeBet(encodedNewBet[:0], bet)
+		if err != nil {
+			return err
 		}
+
+		batch, batchBytes, batchBets, err = client.accumulateBatch(batch, batchBets, batchBytes, encodedNewBet)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		logger.Error("read-input", logger.Fail)
+		return err
 	}
 
 	if len(batch) > 0 {
@@ -263,33 +261,39 @@ func (client *Client) receiveWinners() error {
 	return nil
 }
 
-func (client *Client) parseRowIntoBet(trimmed string) (protocol.BetMessage, error) {
-	name, rest, ok := strings.Cut(trimmed, ",")
+func (client *Client) parseRowIntoBet(line []byte) (protocol.BetMessage, error) {
+	name, rest, ok := bytes.Cut(line, []byte(","))
 	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
-	}
-	lastname, rest, ok := strings.Cut(rest, ",")
-	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
-	}
-	documentoStr, rest, ok := strings.Cut(rest, ",")
-	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
-	}
-	birthdate, numberStr, ok := strings.Cut(rest, ",")
-	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", trimmed)
-	}
-	if strings.Contains(numberStr, ",") {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se encontraron mas de 5 campos: %q", trimmed)
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
 	}
 
-	documento, err := strconv.ParseUint(documentoStr, 10, 32)
+	lastname, rest, ok := bytes.Cut(rest, []byte(","))
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+	}
+
+	documentoBytes, rest, ok := bytes.Cut(rest, []byte(","))
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+	}
+
+	birthdateBytes, numberBytes, ok := bytes.Cut(rest, []byte(","))
+	if !ok {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+	}
+
+	birthdateStr := string(birthdateBytes)
+
+	if bytes.Contains(numberBytes, []byte(",")) {
+		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se encontraron mas de 5 campos: %q", line)
+	}
+
+	documento, err := strconv.ParseUint(string(documentoBytes), 10, 32)
 	if err != nil {
 		return protocol.BetMessage{}, err
 	}
 
-	numberValue, err := strconv.ParseUint(numberStr, 10, 32)
+	numberValue, err := strconv.ParseUint(string(numberBytes), 10, 32)
 	if err != nil {
 		return protocol.BetMessage{}, err
 	}
@@ -299,7 +303,7 @@ func (client *Client) parseRowIntoBet(trimmed string) (protocol.BetMessage, erro
 		Name:      name,
 		Lastname:  lastname,
 		Document:  uint32(documento),
-		Birthdate: birthdate,
+		Birthdate: birthdateStr,
 		Number:    uint32(numberValue),
 	}
 	return bet, nil

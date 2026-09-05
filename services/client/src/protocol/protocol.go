@@ -48,8 +48,8 @@ type WinnerMessage struct {
 
 type BetMessage struct {
 	Agency    byte
-	Name      string
-	Lastname  string
+	Name      []byte
+	Lastname  []byte
 	Document  uint32
 	Birthdate string
 	Number    uint32
@@ -169,7 +169,7 @@ func decodeBirthdate(birthdayBytes []byte) string {
 	return str[0:4] + "-" + str[4:6] + "-" + str[6:8]
 }
 
-func appendPrefixedField(buf []byte, value string) ([]byte, error) {
+func appendPrefixedField(buf []byte, value []byte) ([]byte, error) {
 	if len(value) > MaxFieldLength {
 		return nil, fmt.Errorf("campo de  %d bytes excede el maximo de %d", len(value), MaxFieldLength)
 	}
