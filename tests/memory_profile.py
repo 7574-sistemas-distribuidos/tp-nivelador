@@ -7,10 +7,11 @@ from utils import shell_cmd, agency_file_generator
 DOCKER_COMPOSE_PATH = "./tests/compose_files/docker-compose-memory-profile.yaml"
 
 INPUT_FILE_PATH = "input/test-data.csv"
-MEDIUM_FILE_ITEM_COUNT = 10000
-LARGE_FILE_ITEM_COUNT = 100000
 
-PROFILE_DIFF_THRESHOLD_BYTES = 2000000
+POLLING_AWAIT_SECONDS = 2
+MEDIUM_FILE_ITEM_COUNT = 1000  # ~30Kb
+LARGE_FILE_ITEM_COUNT = 1000 * MEDIUM_FILE_ITEM_COUNT  # ~30Mb
+PROFILE_DIFF_THRESHOLD_BYTES = 8388608  # 8Mb
 
 
 class MemoryProfile(TestCase):
@@ -29,7 +30,7 @@ class MemoryProfile(TestCase):
 
     @staticmethod
     def _get_peak_memory_in_bytes(client_service_name) -> int:
-        MemoryProfile.await_net_io_stop(client_service_name)
+        MemoryProfile.await_net_io_stop(client_service_name, POLLING_AWAIT_SECONDS)
         peak_mem = docker.get_container_peak_memory_in_bytes(client_service_name)
         return peak_mem
 
@@ -57,7 +58,7 @@ class MemoryProfile(TestCase):
 
         MemoryProfile._remove_agency_file()
 
-        if profile2 - profile1 > PROFILE_DIFF_THRESHOLD_BYTES:
+        if abs(profile2 - profile1) > PROFILE_DIFF_THRESHOLD_BYTES:
             raise ValueError(
                 f"Difference in memory profiles is too big: {profile1}B vs {profile2}B"
             )
