@@ -5,12 +5,15 @@ import (
 	"io"
 )
 
-//TODO: Complete with a short-read/short-write tolerant implementation
+func SendAll(socket io.Writer, totalByteData []byte) error {
+	writtenBytes := 0
 
-func SendAll(socket io.Writer, bytes []byte) error {
-	_, err := socket.Write(bytes)
-	if err != nil {
-		return err
+	for writtenBytes < len(totalByteData) {
+		writtenBytesNow, err := socket.Write(totalByteData[writtenBytes:])
+		if err != nil {
+			return err
+		}
+		writtenBytes += writtenBytesNow
 	}
 	return nil
 }
