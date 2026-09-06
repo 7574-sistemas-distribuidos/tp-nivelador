@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
 )
@@ -81,24 +80,24 @@ func EncodeAck() []byte {
 	return newMessage(Ack, 0)
 }
 
-func EncodeBet(buf []byte, bet BetMessage) ([]byte, error) {
-	buf = append(buf, bet.Agency)
+func AppendBet(buf []byte, agency byte, name, lastname, birthdate []byte, document, number uint32) ([]byte, error) {
+	buf = append(buf, agency)
 
-	buf, err := appendPrefixedField(buf, bet.Name)
+	buf, err := appendPrefixedField(buf, name)
 
 	if err != nil {
 		return nil, fmt.Errorf("name: %w", err)
 	}
 
-	buf, err = appendPrefixedField(buf, bet.Lastname)
+	buf, err = appendPrefixedField(buf, lastname)
 
 	if err != nil {
 		return nil, fmt.Errorf("lastname: %w", err)
 	}
 
-	buf = binary.BigEndian.AppendUint32(buf, bet.Document)
-	buf = binary.BigEndian.AppendUint32(buf, encodeBirthdate(bet.Birthdate))
-	buf = binary.BigEndian.AppendUint32(buf, bet.Number)
+	buf = binary.BigEndian.AppendUint32(buf, document)
+	buf = binary.BigEndian.AppendUint32(buf, encodeBirthdate(birthdate))
+	buf = binary.BigEndian.AppendUint32(buf, number)
 	return buf, nil
 }
 
@@ -126,9 +125,18 @@ func newMessage(tipo byte, payloadSize int) []byte {
 	return message
 }
 
-func encodeBirthdate(cumpleanos string) uint32 {
-	numbers := strings.ReplaceAll(cumpleanos, "-", "")
-	value, _ := strconv.ParseUint(numbers, 10, 32)
+func encodeBirthdate(birthdate []byte) uint32 {
+	var digits [8]byte
+	n := 0
+	for _, b := range birthdate {
+		if b != '-' {
+			if n < len(digits) {
+				digits[n] = b
+			}
+			n++
+		}
+	}
+	value, _ := strconv.ParseUint(string(digits[:n]), 10, 32)
 	return uint32(value)
 }
 

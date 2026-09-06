@@ -135,12 +135,7 @@ func (client *Client) sendBets() error {
 			continue
 		}
 
-		bet, err := client.parseRowIntoBet(line)
-		if err != nil {
-			return err
-		}
-
-		encodedNewBet, err = protocol.EncodeBet(encodedNewBet[:0], bet)
+		encodedNewBet, err = client.encodeBet(encodedNewBet[:0], line)
 		if err != nil {
 			return err
 		}
@@ -261,50 +256,40 @@ func (client *Client) receiveWinners() error {
 	return nil
 }
 
-func (client *Client) parseRowIntoBet(line []byte) (protocol.BetMessage, error) {
+func (client *Client) encodeBet(buf []byte, line []byte) ([]byte, error) {
 	name, rest, ok := bytes.Cut(line, []byte(","))
 	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+		return nil, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
 	}
 
 	lastname, rest, ok := bytes.Cut(rest, []byte(","))
 	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+		return nil, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
 	}
 
 	documentoBytes, rest, ok := bytes.Cut(rest, []byte(","))
 	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+		return nil, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
 	}
 
-	birthdateBytes, numberBytes, ok := bytes.Cut(rest, []byte(","))
+	birthdate, numberBytes, ok := bytes.Cut(rest, []byte(","))
 	if !ok {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
+		return nil, fmt.Errorf("línea invalida, se esperaban 5 campos: %q", line)
 	}
-
-	birthdateStr := string(birthdateBytes)
 
 	if bytes.Contains(numberBytes, []byte(",")) {
-		return protocol.BetMessage{}, fmt.Errorf("línea invalida, se encontraron mas de 5 campos: %q", line)
+		return nil, fmt.Errorf("línea invalida, se encontraron mas de 5 campos: %q", line)
 	}
 
 	documento, err := strconv.ParseUint(string(documentoBytes), 10, 32)
 	if err != nil {
-		return protocol.BetMessage{}, err
+		return nil, err
 	}
 
 	numberValue, err := strconv.ParseUint(string(numberBytes), 10, 32)
 	if err != nil {
-		return protocol.BetMessage{}, err
+		return nil, err
 	}
 
-	bet := protocol.BetMessage{
-		Agency:    client.agency,
-		Name:      name,
-		Lastname:  lastname,
-		Document:  uint32(documento),
-		Birthdate: birthdateStr,
-		Number:    uint32(numberValue),
-	}
-	return bet, nil
+	return protocol.AppendBet(buf, client.agency, name, lastname, birthdate, uint32(documento), uint32(numberValue))
 }
