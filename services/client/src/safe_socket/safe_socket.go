@@ -1,6 +1,9 @@
 package safe_socket
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 //TODO: Complete with a short-read/short-write tolerant implementation
 
@@ -12,11 +15,18 @@ func SendAll(socket io.Writer, bytes []byte) error {
 	return nil
 }
 
-func RecvAll(socket io.Reader, size int) ([]byte, error) {
-	buff := make([]byte, size)
-	n, err := socket.Read(buff)
-	if err != nil {
-		return nil, err
+func RecvAll(socket io.Reader, totalBytesToReceive int) ([]byte, error) {
+	fixedBuffer := make([]byte, totalBytesToReceive)
+	positionsFilled := 0
+
+	for positionsFilled < totalBytesToReceive {
+		positionsJustFilled, err := socket.Read(fixedBuffer[positionsFilled:])
+		positionsFilled += positionsJustFilled
+
+		if err != nil && positionsFilled < totalBytesToReceive {
+			return nil, fmt.Errorf("error while reading from socket: %w", err)
+		}
 	}
-	return buff[:n], nil
+
+	return fixedBuffer, nil
 }
