@@ -1,4 +1,5 @@
 from lottery.bet import Bet
+from protocol.bet_record import BetRecord
 
 
 class StartBetWinnersSendingMessage:
@@ -17,10 +18,8 @@ class StartBetWinnersSendingMessage:
 
 
 class BetWinnerMessage:
-    _BIRTHDATE_BYTES = 10
-
     def __init__(self, bet: Bet):
-        self._bet = bet
+        self._bet_record = BetRecord.from_bet(bet)
 
     def to_bytes(self):
         return self._type() + self._length() + self._payload()
@@ -33,25 +32,7 @@ class BetWinnerMessage:
         return payload_length.to_bytes(2, byteorder="big")
 
     def _payload(self):
-        document_in_bytes = self._bet.document.to_bytes(4, byteorder="big")
-        number_in_bytes = self._bet.number.to_bytes(2, byteorder="big")
-        birthdate_in_bytes = self._bet.birthdate.encode("utf-8")
-        if len(birthdate_in_bytes) != self._BIRTHDATE_BYTES:
-            raise ValueError(
-                f"birthdate must be exactly {self._BIRTHDATE_BYTES} bytes, "
-                f"got {len(birthdate_in_bytes)}: {self._bet.birthdate!r}"
-            )
-        first_name_in_bytes = self._bet.first_name.encode("utf-8")
-        last_name_in_bytes = self._bet.last_name.encode("utf-8")
-        return (
-            document_in_bytes
-            + number_in_bytes
-            + birthdate_in_bytes
-            + len(first_name_in_bytes).to_bytes(1, byteorder="big")
-            + first_name_in_bytes
-            + len(last_name_in_bytes).to_bytes(1, byteorder="big")
-            + last_name_in_bytes
-        )
+        return self._bet_record.to_bytes()
 
 
 class FinalizeBetWinnersSendingMessage:
@@ -80,3 +61,15 @@ class StartBetsSendingMessage:
 
     def agency_id(self):
         return self._agency_id
+
+
+class FilledBetMessage:
+    def __init__(self, record: BetRecord):
+        self._bet_record = record
+
+    @classmethod
+    def from_bytes(cls, payload):
+        return cls(BetRecord.from_bytes(payload))
+
+    def bet_for(self, agency_id: int):
+        return self._bet_record.to_bet(agency_id)

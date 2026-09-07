@@ -5,6 +5,7 @@ from protocol.message import (
     BetWinnerMessage,
     FinalizeBetWinnersSendingMessage,
     StartBetsSendingMessage,
+    FilledBetMessage,
 )
 from lottery.bet import Bet
 
@@ -60,36 +61,6 @@ class BetWinnerMessageTests(unittest.TestCase):
             + self.LAST_NAME_RIVERA,
         )
 
-    def test_it_rejects_a_birthdate_shorter_than_ten_bytes(self):
-        bet_with_unpadded_birthdate = Bet(
-            agency_id=1,
-            first_name="Tiago Nicolás",
-            last_name="Rivera",
-            document=34407251,
-            birthdate="2001-8-29",
-            number=1033,
-        )
-
-        message = BetWinnerMessage(bet_with_unpadded_birthdate)
-
-        with self.assertRaises(ValueError):
-            message.to_bytes()
-
-    def test_it_rejects_a_ten_character_birthdate_that_is_eleven_bytes(self):
-        bet_with_non_ascii_birthdate = Bet(
-            agency_id=1,
-            first_name="Tiago Nicolás",
-            last_name="Rivera",
-            document=34407251,
-            birthdate="2001-08-2ñ",
-            number=1033,
-        )
-
-        message = BetWinnerMessage(bet_with_non_ascii_birthdate)
-
-        with self.assertRaises(ValueError):
-            message.to_bytes()
-
 
 class FinalizeBetWinnersSendingMessageTests(unittest.TestCase):
     FINALIZE_BET_WINNERS_SENDING_TYPE = b"\x06"
@@ -114,6 +85,43 @@ class StartBetsSendingMessageTests(unittest.TestCase):
         message = StartBetsSendingMessage.from_bytes(self.AGENCY_ID_1_PAYLOAD)
 
         self.assertEqual(message.agency_id(), 1)
+
+
+class FilledBetMessageTests(unittest.TestCase):
+    CONNECTION_AGENCY_ID = 1
+
+    DOCUMENT_34407251 = b"\x02\x0d\x03\x53"
+    NUMBER_1033 = b"\x04\x09"
+    BIRTHDATE_2001_08_29 = b"2001-08-29"
+    FIRST_NAME_LENGTH_14 = b"\x0e"
+    FIRST_NAME_TIAGO_NICOLAS = b"Tiago Nicol\xc3\xa1s"
+    LAST_NAME_LENGTH_6 = b"\x06"
+    LAST_NAME_RIVERA = b"Rivera"
+
+    BET_RECORD_PAYLOAD = (
+        DOCUMENT_34407251
+        + NUMBER_1033
+        + BIRTHDATE_2001_08_29
+        + FIRST_NAME_LENGTH_14
+        + FIRST_NAME_TIAGO_NICOLAS
+        + LAST_NAME_LENGTH_6
+        + LAST_NAME_RIVERA
+    )
+
+    def test_it_parses_the_bet_fields_from_the_wire_record(self):
+        message = FilledBetMessage.from_bytes(self.BET_RECORD_PAYLOAD)
+
+        self.assertEqual(
+            message.bet_for(self.CONNECTION_AGENCY_ID),
+            Bet(
+                agency_id=1,
+                first_name="Tiago Nicolás",
+                last_name="Rivera",
+                document=34407251,
+                birthdate="2001-08-29",
+                number=1033,
+            ),
+        )
 
 
 if __name__ == "__main__":
