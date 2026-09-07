@@ -1,6 +1,6 @@
 import unittest
 
-from protocol.bet_record import BetRecord
+from protocol.messages.bet_record import BetRecord
 from protocol.errors import ProtocolError
 
 
