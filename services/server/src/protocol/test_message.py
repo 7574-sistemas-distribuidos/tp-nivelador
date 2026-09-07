@@ -6,7 +6,9 @@ from protocol.message import (
     FinalizeBetWinnersSendingMessage,
     StartBetsSendingMessage,
     FilledBetMessage,
+    FinalizeBetsSendingMessage,
 )
+from protocol.errors import ProtocolError
 from lottery.bet import Bet
 
 
@@ -85,6 +87,20 @@ class StartBetsSendingMessageTests(unittest.TestCase):
         message = StartBetsSendingMessage.from_bytes(self.AGENCY_ID_1_PAYLOAD)
 
         self.assertEqual(message.agency_id(), 1)
+
+    def test_it_rejects_an_empty_payload(self):
+        with self.assertRaises(ProtocolError):
+            StartBetsSendingMessage.from_bytes(b"")
+
+    def test_it_rejects_a_payload_longer_than_one_byte(self):
+        with self.assertRaises(ProtocolError):
+            StartBetsSendingMessage.from_bytes(b"\x01\x02")
+
+
+class FinalizeBetsSendingMessageTests(unittest.TestCase):
+    def test_it_rejects_a_payload_that_carries_anything(self):
+        with self.assertRaises(ProtocolError):
+            FinalizeBetsSendingMessage.from_bytes(b"\x00")
 
 
 class FilledBetMessageTests(unittest.TestCase):
