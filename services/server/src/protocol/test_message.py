@@ -4,6 +4,7 @@ from protocol.message import (
     StartBetWinnersSendingMessage,
     BetWinnerMessage,
     FinalizeBetWinnersSendingMessage,
+    StartBetsSendingMessage,
 )
 from lottery.bet import Bet
 
@@ -104,6 +105,15 @@ class FinalizeBetWinnersSendingMessageTests(unittest.TestCase):
             + self.ZERO_LENGTH
             + self.EMPTY_PAYLOAD,
         )
+
+
+class StartBetsSendingMessageTests(unittest.TestCase):
+    AGENCY_ID_1_PAYLOAD = b"\x01"
+
+    def test_it_parses_the_agency_id_from_a_single_byte_payload(self):
+        message = StartBetsSendingMessage.from_bytes(self.AGENCY_ID_1_PAYLOAD)
+
+        self.assertEqual(message.agency_id(), 1)
 
 
 if __name__ == "__main__":

@@ -67,3 +67,16 @@ class FinalizeBetWinnersSendingMessage:
 
     def _payload(self):
         return b""
+
+
+class StartBetsSendingMessage:
+    def __init__(self, agency_id: int):
+        self._agency_id = agency_id
+
+    @classmethod
+    def from_bytes(cls, payload):
+        agency_id = int.from_bytes(payload, byteorder="big")
+        return cls(agency_id)
+
+    def agency_id(self):
+        return self._agency_id
