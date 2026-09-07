@@ -122,23 +122,23 @@ func newMessage(tipo byte, payloadSize int) []byte {
 }
 
 func encodeBirthdate(birthdate []byte) (uint32, error) {
-	var digits [8]byte
+	var numbers [8]byte
 	n := 0
 	for _, b := range birthdate {
 		if b == '-' {
 			continue
 		}
-		if n >= len(digits) {
+		if n >= len(numbers) {
 			return 0, fmt.Errorf("fecha de nacimiento invalida: se esperaban 8 digitos (AAAAMMDD), se recibio %q", birthdate)
 		}
-		digits[n] = b
+		numbers[n] = b
 		n++
 	}
-	if n != len(digits) {
+	if n != len(numbers) {
 		return 0, fmt.Errorf("fecha de nacimiento invalida: se esperaban 8 digitos (AAAAMMDD), se recibio %q", birthdate)
 	}
 
-	value, err := strconv.ParseUint(string(digits[:]), 10, 32)
+	value, err := strconv.ParseUint(string(numbers[:]), 10, 32)
 	if err != nil {
 		return 0, fmt.Errorf("fecha de nacimiento invalida: %w", err)
 	}

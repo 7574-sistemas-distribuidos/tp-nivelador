@@ -18,37 +18,36 @@ class Coordinator:
 
     def start(self):
         while True:
-            notify = self.response_channel.get()
+            msg = self.response_channel.get()
 
-            if notify == SHUTDOWN:
+            if msg == SHUTDOWN:
                 clients = self.clients_channels.values() 
                 for client_channel in clients:
                     client_channel.put(SHUTDOWN)
                 break
 
-            if isinstance(notify, tuple) and len(notify) == 2:
-                agency_id, client_channel = notify
-                logger.info("coordinator", logger.LogResult.in_progress, "new agency registered", agency_id)
-
+            agency_id, client_channel = msg
+            logger.info("coordinator", logger.LogResult.in_progress, "new agency registered", agency_id)
             self.clients_channels[agency_id] = client_channel
 
             if len(self.clients_channels) >= self.agency_quorum_min:
-                logger.info("coordinator", logger.LogResult.success, "quorum reached")
-                with self.lottery_lock:
-                    bets = list(self.lottery.load_bets())
+                self._run_lottery()
 
-                agency_list = list(self.clients_channels.keys())
+    def _run_lottery(self):
+        logger.info("coordinator", logger.LogResult.success, "quorum reached")
+        with self.lottery_lock:
+            bets = list(self.lottery.load_bets())
 
-                winners_by_agency = {
+        winners_by_agency = {
                     agency_id: []
                     for agency_id in self.clients_channels
                 }
 
-                for bet in bets: 
-                    if bet.agency_id in agency_list and self.lottery.has_won(bet):
-                        winners_by_agency[bet.agency_id].append(bet)
+        for bet in bets: 
+            if bet.agency_id in self.clients_channels and self.lottery.has_won(bet):
+                winners_by_agency[bet.agency_id].append(bet)
 
-                for agency_id, client_channel in self.clients_channels.items(): 
-                    client_channel.put(winners_by_agency[agency_id])
+        for agency_id, client_channel in self.clients_channels.items(): 
+            client_channel.put(winners_by_agency[agency_id])
 
-                self.clients_channels.clear()
+        self.clients_channels.clear()
