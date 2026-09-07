@@ -11,7 +11,6 @@ import unittest
 
 class BetWinnerMessageTests(unittest.TestCase):
     BET_WINNER_TYPE = b"\x05"
-    THIRTY_EIGHT_BYTE_PAYLOAD_LENGTH = b"\x00\x26"
 
     DOCUMENT_34407251 = b"\x02\x0d\x03\x53"
     NUMBER_1033 = b"\x04\x09"
@@ -21,23 +20,26 @@ class BetWinnerMessageTests(unittest.TestCase):
     LAST_NAME_LENGTH_6 = b"\x06"
     LAST_NAME_RIVERA = b"Rivera"
 
-    def test_it_serializes_the_bet_fields_in_wire_order(self):
-        winner_bet = Bet(
-            agency_id=1,
-            first_name="Tiago Nicolás",
-            last_name="Rivera",
-            document=34407251,
-            birthdate="2001-08-29",
-            number=1033,
-        )
+    WINNER_BET = Bet(
+        agency_id=1,
+        first_name="Tiago Nicolás",
+        last_name="Rivera",
+        document=34407251,
+        birthdate="2001-08-29",
+        number=1033,
+    )
 
-        message = BetWinnerMessage(winner_bet)
+    def test_it_identifies_itself_with_the_bet_winner_type(self):
+        message = BetWinnerMessage(self.WINNER_BET)
+
+        self.assertEqual(message.type(), self.BET_WINNER_TYPE)
+
+    def test_it_serializes_the_bet_fields_in_wire_order(self):
+        message = BetWinnerMessage(self.WINNER_BET)
 
         self.assertEqual(
-            message.to_bytes(),
-            self.BET_WINNER_TYPE
-            + self.THIRTY_EIGHT_BYTE_PAYLOAD_LENGTH
-            + self.DOCUMENT_34407251
+            message.payload(),
+            self.DOCUMENT_34407251
             + self.NUMBER_1033
             + self.BIRTHDATE_2001_08_29
             + self.FIRST_NAME_LENGTH_14
@@ -49,29 +51,29 @@ class BetWinnerMessageTests(unittest.TestCase):
 
 class FinalizeBetWinnersSendingMessageTests(unittest.TestCase):
     FINALIZE_BET_WINNERS_SENDING_TYPE = b"\x06"
-    ZERO_LENGTH = b"\x00\x00"
     EMPTY_PAYLOAD = b""
 
-    def test_it_serializes_to_its_type_followed_by_a_zero_length_payload(self):
+    def test_it_identifies_itself_with_the_finalize_bet_winners_sending_type(self):
         message = FinalizeBetWinnersSendingMessage()
 
-        self.assertEqual(
-            message.to_bytes(),
-            self.FINALIZE_BET_WINNERS_SENDING_TYPE
-            + self.ZERO_LENGTH
-            + self.EMPTY_PAYLOAD,
-        )
+        self.assertEqual(message.type(), self.FINALIZE_BET_WINNERS_SENDING_TYPE)
+
+    def test_it_carries_no_payload(self):
+        message = FinalizeBetWinnersSendingMessage()
+
+        self.assertEqual(message.payload(), self.EMPTY_PAYLOAD)
 
 
 class StartBetWinnersSendingMessageTests(unittest.TestCase):
     START_BET_WINNERS_SENDING_TYPE = b"\x04"
-    ZERO_LENGTH = b"\x00\x00"
     EMPTY_PAYLOAD = b""
 
-    def test_it_serializes_to_its_type_followed_by_a_zero_length_payload(self):
+    def test_it_identifies_itself_with_the_start_bet_winners_sending_type(self):
         message = StartBetWinnersSendingMessage()
 
-        self.assertEqual(
-            message.to_bytes(),
-            self.START_BET_WINNERS_SENDING_TYPE + self.ZERO_LENGTH + self.EMPTY_PAYLOAD,
-        )
+        self.assertEqual(message.type(), self.START_BET_WINNERS_SENDING_TYPE)
+
+    def test_it_carries_no_payload(self):
+        message = StartBetWinnersSendingMessage()
+
+        self.assertEqual(message.payload(), self.EMPTY_PAYLOAD)

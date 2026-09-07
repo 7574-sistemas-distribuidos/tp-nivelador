@@ -33,4 +33,7 @@ class MessageChannel:
         return message_class.from_bytes(payload)
 
     def send(self, message):
-        safe_socket.send_all(self._socket, message.to_bytes())
+        payload = message.payload()
+        length = len(payload).to_bytes(_LENGTH_BYTES, byteorder="big")
+        total_frame_bytes = message.type() + length + payload
+        safe_socket.send_all(self._socket, total_frame_bytes)

@@ -3,6 +3,7 @@ import unittest
 from protocol.channel import MessageChannel
 from protocol.errors import ProtocolError
 from protocol.messages.serialization.outgoing import (
+    BetWinnerMessage,
     FinalizeBetWinnersSendingMessage,
 )
 from lottery.bet import Bet
@@ -121,6 +122,35 @@ class MessageChannelReceiveTests(unittest.TestCase):
 
 class MessageChannelSendTests(unittest.TestCase):
     FINALIZE_BET_WINNERS_SENDING_FRAME = b"\x06" + b"\x00\x00"
+
+    BET_WINNER_FRAME = (
+        b"\x05"
+        + b"\x00\x26"
+        + b"\x02\x0d\x03\x53"
+        + b"\x04\x09"
+        + b"2001-08-29"
+        + b"\x0e"
+        + b"Tiago Nicol\xc3\xa1s"
+        + b"\x06"
+        + b"Rivera"
+    )
+
+    WINNER_BET = Bet(
+        agency_id=1,
+        first_name="Tiago Nicol\u00e1s",
+        last_name="Rivera",
+        document=34407251,
+        birthdate="2001-08-29",
+        number=1033,
+    )
+
+    def test_it_frames_a_message_with_the_byte_count_of_its_payload(self):
+        client_socket = FakeSocket(b"")
+        channel = MessageChannel(client_socket)
+
+        channel.send(BetWinnerMessage(self.WINNER_BET))
+
+        self.assertEqual(client_socket.sent, self.BET_WINNER_FRAME)
 
     def test_it_sends_the_serialized_message(self):
         client_socket = FakeSocket(b"")
