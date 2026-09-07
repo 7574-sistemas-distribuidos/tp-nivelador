@@ -160,7 +160,10 @@ func DecodeWinner(payload []byte) (WinnerMessage, error) {
 	if err != nil {
 		return WinnerMessage{}, fmt.Errorf("birthdate: %w", err)
 	}
-	birthdate := decodeBirthdate(birthdateBytes)
+	birthdate, err := decodeBirthdate(birthdateBytes)
+	if err != nil {
+		return WinnerMessage{}, fmt.Errorf("birthdate: %w", err)
+	}
 
 	numberBytes, _, err := take(payload, pos, 4)
 	if err != nil {
@@ -171,10 +174,13 @@ func DecodeWinner(payload []byte) (WinnerMessage, error) {
 	return WinnerMessage{name, lastname, document, birthdate, number}, nil
 }
 
-func decodeBirthdate(birthdayBytes []byte) string {
+func decodeBirthdate(birthdayBytes []byte) (string, error) {
 	value := binary.BigEndian.Uint32(birthdayBytes)
 	str := strconv.FormatUint(uint64(value), 10)
-	return str[0:4] + "-" + str[4:6] + "-" + str[6:8]
+	if len(str) != 8 {
+		return "", fmt.Errorf("fecha de nacimiento invalida: se esperaban 8 digitos (AAAAMMDD), se recibio %q", str)
+	}
+	return str[0:4] + "-" + str[4:6] + "-" + str[6:8], nil
 }
 
 func appendPrefixedField(buf []byte, value []byte) ([]byte, error) {
