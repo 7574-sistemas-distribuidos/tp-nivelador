@@ -85,8 +85,13 @@ func AppendBet(buf []byte, name, lastname, birthdate []byte, document, number ui
 		return nil, fmt.Errorf("lastname: %w", err)
 	}
 
+	birthdateValue, err := encodeBirthdate(birthdate)
+	if err != nil {
+		return nil, fmt.Errorf("birthdate: %w", err)
+	}
+
 	buf = binary.BigEndian.AppendUint32(buf, document)
-	buf = binary.BigEndian.AppendUint32(buf, encodeBirthdate(birthdate))
+	buf = binary.BigEndian.AppendUint32(buf, birthdateValue)
 	buf = binary.BigEndian.AppendUint32(buf, number)
 	return buf, nil
 }
@@ -116,19 +121,28 @@ func newMessage(tipo byte, payloadSize int) []byte {
 	return message
 }
 
-func encodeBirthdate(birthdate []byte) uint32 {
-	var numbers [8]byte
+func encodeBirthdate(birthdate []byte) (uint32, error) {
+	var digits [8]byte
 	n := 0
 	for _, b := range birthdate {
-		if b != '-' {
-			if n < len(numbers) {
-				numbers[n] = b
-			}
-			n++
+		if b == '-' {
+			continue
 		}
+		if n >= len(digits) {
+			return 0, fmt.Errorf("fecha de nacimiento invalida: se esperaban 8 digitos (AAAAMMDD), se recibio %q", birthdate)
+		}
+		digits[n] = b
+		n++
 	}
-	value, _ := strconv.ParseUint(string(numbers[:n]), 10, 32)
-	return uint32(value)
+	if n != len(digits) {
+		return 0, fmt.Errorf("fecha de nacimiento invalida: se esperaban 8 digitos (AAAAMMDD), se recibio %q", birthdate)
+	}
+
+	value, err := strconv.ParseUint(string(digits[:]), 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("fecha de nacimiento invalida: %w", err)
+	}
+	return uint32(value), nil
 }
 
 func DecodeWinner(payload []byte) (WinnerMessage, error) {

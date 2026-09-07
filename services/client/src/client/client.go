@@ -39,15 +39,14 @@ type Client struct {
 }
 
 func NewClient(ctx context.Context, config ClientConfig) (*Client, error) {
-	conn, err := connectToServer(ctx, config.ServerHost, config.ServerPort)
-	if err != nil {
-		logger.Warn("connect-to-server", logger.Fail)
-		return nil, err
-	}
 
 	agencyId, err := strconv.Atoi(config.AgencyId)
 	if err != nil {
 		return nil, err
+	}
+
+	if agencyId < 0 || agencyId > 0xFF {
+		return nil, fmt.Errorf("agency id invalido: %d, debe estar entre 0 y 255", agencyId)
 	}
 
 	batchSize, err := strconv.Atoi(config.BatchSize)
@@ -57,6 +56,12 @@ func NewClient(ctx context.Context, config ClientConfig) (*Client, error) {
 
 	if batchSize < 1 {
 		return nil, fmt.Errorf("tamaño de batch invalido: %d", batchSize)
+	}
+
+	conn, err := connectToServer(ctx, config.ServerHost, config.ServerPort)
+	if err != nil {
+		logger.Warn("connect-to-server", logger.Fail)
+		return nil, err
 	}
 
 	return &Client{conn: conn, config: config, agency: byte(agencyId), batchSize: batchSize, ctx: ctx}, nil
