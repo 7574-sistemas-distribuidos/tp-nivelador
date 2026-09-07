@@ -1,4 +1,5 @@
 from lottery.bet import Bet
+from protocol.errors import ProtocolError
 
 
 class BetRecord:
@@ -6,11 +7,12 @@ class BetRecord:
     _NUMBER_BYTES = 2
     _BIRTHDATE_BYTES = 10
     _NAME_LENGTH_BYTES = 1
+    _FIXED_PREFIX_BYTES = _DOCUMENT_BYTES + _NUMBER_BYTES + _BIRTHDATE_BYTES
 
     def __init__(self, document, number, birthdate, first_name, last_name):
         birthdate_in_bytes = birthdate.encode("utf-8")
         if len(birthdate_in_bytes) != self._BIRTHDATE_BYTES:
-            raise ValueError(
+            raise ProtocolError(
                 f"birthdate must be exactly {self._BIRTHDATE_BYTES} bytes, "
                 f"got {len(birthdate_in_bytes)}: {birthdate!r}"
             )
@@ -32,6 +34,12 @@ class BetRecord:
 
     @classmethod
     def from_bytes(cls, data):
+        minimum = cls._FIXED_PREFIX_BYTES + cls._NAME_LENGTH_BYTES
+        if len(data) < minimum:
+            raise ProtocolError(
+                f"bet record needs at least {minimum} bytes, got {len(data)}"
+            )
+
         offset = 0
         document = int.from_bytes(
             data[offset : offset + cls._DOCUMENT_BYTES], byteorder="big"
@@ -39,16 +47,39 @@ class BetRecord:
         offset += cls._DOCUMENT_BYTES
         number = int.from_bytes(data[offset : offset + cls._NUMBER_BYTES], byteorder="big")
         offset += cls._NUMBER_BYTES
-        birthdate = data[offset : offset + cls._BIRTHDATE_BYTES].decode("utf-8")
+        birthdate = cls._decoded(
+            data[offset : offset + cls._BIRTHDATE_BYTES], "birthdate"
+        )
         offset += cls._BIRTHDATE_BYTES
         first_name_length = data[offset]
         offset += cls._NAME_LENGTH_BYTES
-        first_name = data[offset : offset + first_name_length].decode("utf-8")
+        if offset + first_name_length + cls._NAME_LENGTH_BYTES > len(data):
+            raise ProtocolError(
+                f"first_name length {first_name_length} overruns the record: "
+                f"only {len(data) - offset} bytes remain"
+            )
+        first_name = cls._decoded(
+            data[offset : offset + first_name_length], "first_name"
+        )
         offset += first_name_length
         last_name_length = data[offset]
         offset += cls._NAME_LENGTH_BYTES
-        last_name = data[offset : offset + last_name_length].decode("utf-8")
+        if offset + last_name_length != len(data):
+            raise ProtocolError(
+                f"last_name length {last_name_length} does not consume the record "
+                f"exactly: {len(data) - offset} bytes remain"
+            )
+        last_name = cls._decoded(
+            data[offset : offset + last_name_length], "last_name"
+        )
         return cls(document, number, birthdate, first_name, last_name)
+
+    @classmethod
+    def _decoded(cls, raw, field):
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError as e:
+            raise ProtocolError(f"{field} is not valid utf-8") from e
 
     def to_bytes(self):
         first_name_in_bytes = self._first_name.encode("utf-8")
