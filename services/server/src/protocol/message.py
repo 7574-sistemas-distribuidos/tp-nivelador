@@ -18,6 +18,7 @@ class StartBetWinnersSendingMessage:
 
 class BetWinnerMessage:
     _BIRTHDATE_BYTES = 10
+
     def __init__(self, bet: Bet):
         self._bet = bet
 
@@ -51,3 +52,18 @@ class BetWinnerMessage:
             + len(last_name_in_bytes).to_bytes(1, byteorder="big")
             + last_name_in_bytes
         )
+
+
+class FinalizeBetWinnersSendingMessage:
+    def to_bytes(self):
+        return self._type() + self._length() + self._payload()
+
+    def _type(self):
+        return b"\x06"
+
+    def _length(self):
+        payload_length = len(self._payload())
+        return payload_length.to_bytes(2, byteorder="big")
+
+    def _payload(self):
+        return b""

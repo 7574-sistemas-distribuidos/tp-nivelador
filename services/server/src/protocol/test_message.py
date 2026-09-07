@@ -1,6 +1,10 @@
 import unittest
 
-from protocol.message import StartBetWinnersSendingMessage, BetWinnerMessage
+from protocol.message import (
+    StartBetWinnersSendingMessage,
+    BetWinnerMessage,
+    FinalizeBetWinnersSendingMessage,
+)
 from lottery.bet import Bet
 
 
@@ -84,6 +88,22 @@ class BetWinnerMessageTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             message.to_bytes()
+
+
+class FinalizeBetWinnersSendingMessageTests(unittest.TestCase):
+    FINALIZE_BET_WINNERS_SENDING_TYPE = b"\x06"
+    ZERO_LENGTH = b"\x00\x00"
+    EMPTY_PAYLOAD = b""
+
+    def test_it_serializes_to_its_type_followed_by_a_zero_length_payload(self):
+        message = FinalizeBetWinnersSendingMessage()
+
+        self.assertEqual(
+            message.to_bytes(),
+            self.FINALIZE_BET_WINNERS_SENDING_TYPE
+            + self.ZERO_LENGTH
+            + self.EMPTY_PAYLOAD,
+        )
 
 
 if __name__ == "__main__":
