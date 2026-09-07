@@ -33,9 +33,9 @@ class Server:
                 is_end, data = read_expected(client_socket, BATCH)
                 if is_end:
                     break
-                agency = data[0].agency
-                bets = [ Bet(bet.agency, bet.nombre, bet.apellido, bet.documento, bet.cumpleanos, bet.number)
-                    for bet in data ]
+                agency, bet_msgs = data
+                bets = [ Bet(agency, bet.nombre, bet.apellido, bet.documento, bet.cumpleanos, bet.number)
+                    for bet in bet_msgs ]
 
                 with self.lottery_lock:
                     self.lottery.store_bets(bets)

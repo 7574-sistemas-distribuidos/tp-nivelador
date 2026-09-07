@@ -3,18 +3,19 @@ HEADER (3 bytes)
   tipo:          1 byte   (pocos valores)
   largo payload: 2 bytes
 
-PAYLOAD (variable, tamaño = largo payload)
-  agency:        1 byte
-  largo nombre:  1 byte
-  nombre:        N bytes   (UTF-8, variable)
-  largo apellido:1 byte
-  apellido:      M bytes   (UTF-8, variable)
-  documento:     4 bytes
-  cumpleaños:    4 bytes  (AAAAMMDD como un solo entero)
-  number:        4 bytes
+PAYLOAD BATCH (variable, tamaño = largo payload)
+  agency:        1 byte   
+  bets:          repetido, cada uno:
+    largo nombre:  1 byte
+    nombre:        N bytes   (UTF-8, variable)
+    largo apellido:1 byte
+    apellido:      M bytes   (UTF-8, variable)
+    documento:     4 bytes
+    cumpleaños:    4 bytes  (AAAAMMDD como un solo entero)
+    number:        4 bytes
 
 header type:
-1 = BET       (cliente → servidor, una apuesta) -- ya no se emite, se reemplazó por BATCH
+1 = BET       (cliente → servidor, una apuesta) 
 4 = END       (cliente → servidor, servidor → cliente, "ya mandé todo")
 2 = WINNER   (servidor → cliente, un winner)
 3 = ACK   (cliente → servidor, servidor → cliente, confirmación de éxito, sin payload)
@@ -38,7 +39,6 @@ _MAX_FIELD_LENGTH = 0xFF
 
 @dataclass
 class BetMessage:
-    agency: int
     nombre: str
     apellido: str
     documento: int
@@ -47,8 +47,6 @@ class BetMessage:
 
     @staticmethod
     def decode(payload, pos: int = 0) -> tuple['BetMessage', int]:
-        agency_bytes, pos = _take(payload, pos, 1)
-        agency = int.from_bytes(agency_bytes, 'big')
         nombre, pos = _read_prefixed_field(payload, pos)
         apellido, pos = _read_prefixed_field(payload, pos)
         documento_bytes, pos = _take(payload, pos, 4)
@@ -58,7 +56,7 @@ class BetMessage:
         number_bytes, pos = _take(payload, pos, 4)
         number = int.from_bytes(number_bytes, 'big')
 
-        return BetMessage(agency, nombre, apellido, documento, cumpleanos, number), pos
+        return BetMessage(nombre, apellido, documento, cumpleanos, number), pos
 
 @dataclass
 class WinnerMessage:
@@ -79,14 +77,14 @@ class WinnerMessage:
         return payload
 
 
-def read_message(sock) -> tuple[int, list[BetMessage] | None]:
+def read_message(sock) -> tuple[int, tuple[int, list[BetMessage]] | None]:
     header = safe_socket.recv_all(sock, _HEADER_SIZE)
     tipo = int.from_bytes(header[0:1], 'big')
     largo_payload = int.from_bytes(header[1:3], 'big')
     payload = safe_socket.recv_all(sock, largo_payload)
     return tipo, decode_message(tipo, payload)
 
-def read_expected(sock, expected_tipo) -> tuple[bool, list[BetMessage] | None]:
+def read_expected(sock, expected_tipo) -> tuple[bool, tuple[int, list[BetMessage]] | None]:
     tipo, data = read_message(sock)
     if tipo == END:
         return True, None
@@ -119,13 +117,14 @@ def _encode_birthdate(cumpleanos) -> bytes:
     cumpleanos_int = int(cumpleanos.replace("-", ""))
     return cumpleanos_int.to_bytes(4, 'big')
 
-def decode_batch(payload) -> list[BetMessage]:
+def decode_batch(payload) -> tuple[int, list[BetMessage]]:
+    agency_bytes, pos = _take(payload, 0, 1)
+    agency = int.from_bytes(agency_bytes, 'big')
     bets = []
-    pos = 0
     while pos < len(payload):
         bet, pos = BetMessage.decode(payload, pos)
         bets.append(bet)
-    return bets
+    return agency, bets
 
 def _decode_birthdate(birthday_bytes) -> str:
     "de AAAAMMDD a AAAA-MM-DD"
@@ -138,7 +137,7 @@ def _decode_birthdate(birthday_bytes) -> str:
     day = birthday_str[6:8]
     return f"{year}-{month}-{day}"
 
-def decode_message(tipo, payload) -> list[BetMessage] | None:
+def decode_message(tipo, payload) -> tuple[int, list[BetMessage]] | None:
     if tipo == BATCH:
         return decode_batch(payload)
     elif tipo == ACK:

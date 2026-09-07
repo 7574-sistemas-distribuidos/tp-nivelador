@@ -4,15 +4,16 @@ package protocol
   tipo:          1 byte   (pocos valores)
   largo payload: 2 bytes
 
-PAYLOAD (variable, tamaño = largo payload)
+PAYLOAD BATCH (variable, tamaño = largo payload)
   agency:        1 byte
-  largo nombre:  1 byte
-  nombre:        N bytes   (UTF-8, variable)
-  largo apellido:1 byte
-  apellido:      M bytes   (UTF-8, variable)
-  documento:     4 bytes
-  cumpleaños:    4 bytes  (AAAAMMDD como un solo entero)
-  number:        4 bytes
+  bets:          repetido, cada uno:
+    largo nombre:  1 byte
+    nombre:        N bytes   (UTF-8, variable)
+    largo apellido:1 byte
+    apellido:      M bytes   (UTF-8, variable)
+    documento:     4 bytes
+    cumpleaños:    4 bytes  (AAAAMMDD como un solo entero)
+    number:        4 bytes
 
 header type:
 1 = BET       (cliente → servidor, una apuesta)
@@ -45,15 +46,6 @@ type WinnerMessage struct {
 	Number    uint32
 }
 
-type BetMessage struct {
-	Agency    byte
-	Name      []byte
-	Lastname  []byte
-	Document  uint32
-	Birthdate string
-	Number    uint32
-}
-
 func ReadMessage(sock net.Conn) (int, []byte, error) {
 	header, err := safe_socket.RecvAll(sock, headerSize)
 
@@ -80,9 +72,7 @@ func EncodeAck() []byte {
 	return newMessage(Ack, 0)
 }
 
-func AppendBet(buf []byte, agency byte, name, lastname, birthdate []byte, document, number uint32) ([]byte, error) {
-	buf = append(buf, agency)
-
+func AppendBet(buf []byte, name, lastname, birthdate []byte, document, number uint32) ([]byte, error) {
 	buf, err := appendPrefixedField(buf, name)
 
 	if err != nil {
@@ -101,11 +91,12 @@ func AppendBet(buf []byte, agency byte, name, lastname, birthdate []byte, docume
 	return buf, nil
 }
 
-func AppendBatch(buf []byte, payload []byte) ([]byte, error) {
+func AppendBatch(buf []byte, agency byte, payload []byte) ([]byte, error) {
 	headerPos := len(buf)
 	buf = append(buf, Batch, 0, 0)
 	payloadStart := len(buf)
 
+	buf = append(buf, agency)
 	buf = append(buf, payload...)
 
 	payloadSize := len(buf) - payloadStart
@@ -126,17 +117,17 @@ func newMessage(tipo byte, payloadSize int) []byte {
 }
 
 func encodeBirthdate(birthdate []byte) uint32 {
-	var digits [8]byte
+	var numbers [8]byte
 	n := 0
 	for _, b := range birthdate {
 		if b != '-' {
-			if n < len(digits) {
-				digits[n] = b
+			if n < len(numbers) {
+				numbers[n] = b
 			}
 			n++
 		}
 	}
-	value, _ := strconv.ParseUint(string(digits[:n]), 10, 32)
+	value, _ := strconv.ParseUint(string(numbers[:n]), 10, 32)
 	return uint32(value)
 }
 

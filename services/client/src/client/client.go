@@ -174,7 +174,7 @@ func (client *Client) accumulateBatch(batch []byte, batchBets int, batchBytes in
 }
 
 func (client *Client) SendBatch(payload []byte) error {
-	sendBuf, err := protocol.AppendBatch(client.sendBuf[:0], payload)
+	sendBuf, err := protocol.AppendBatch(client.sendBuf[:0], client.agency, payload)
 	if err != nil {
 		logger.Error("encode-batch", logger.Fail)
 		return err
@@ -291,5 +291,5 @@ func (client *Client) encodeBet(buf []byte, line []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return protocol.AppendBet(buf, client.agency, name, lastname, birthdate, uint32(documento), uint32(numberValue))
+	return protocol.AppendBet(buf, name, lastname, birthdate, uint32(documento), uint32(numberValue))
 }
