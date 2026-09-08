@@ -2,10 +2,8 @@ from lottery.bet import Bet
 import logger
 
 
-def bet_from_bytes(data: bytes) -> Bet:
+def bet_from_bytes(data: bytes,agency_id) -> Bet:
     offset = 0
-    agency_id = data[offset]
-    offset += 1
     first_name_length = data[offset]
     offset += 1
     first_name = data[offset:offset + first_name_length].decode('utf-8')

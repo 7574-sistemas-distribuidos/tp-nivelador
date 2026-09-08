@@ -7,6 +7,7 @@ def recv_all(socket: socket.socket, size):
     bytes_received = 0
 
     while bytes_received < size:
+        logger.info("recv-all", logger.LogResult.in_progress, "bytes-received", bytes_received)
         chunk = socket.recv(size - bytes_received)
         if not chunk:
             logger.info("saliendo de recv-all por EOF",logger.LogResult.success, ", bytes_received", bytes_received)

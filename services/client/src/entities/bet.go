@@ -45,15 +45,13 @@ func NewBetFromRecord(record []string) (Bet, error) {
 	}, nil
 }
 
-func SerializeBet(p Bet, agencyId uint8) ([]byte, error) {
+func SerializeBet(p Bet) ([]byte, error) {
 	if len(p.FirstName) > 255 || len(p.LastName) > 255 {
 		logger.Error("SerializeBetFirstNameAndLastName", logger.Fail, " FirstName or LastName exceeds 255 characters")
 		return nil, errors.New("FirstName or LastName exceeds 255 characters")
 	}
 
 	var payload []byte
-
-	payload = append(payload, agencyId)
 
 	payload = append(payload, uint8(len(p.FirstName)))
 	payload = append(payload, p.FirstName...)
@@ -75,4 +73,27 @@ func SerializeBet(p Bet, agencyId uint8) ([]byte, error) {
 	logger.Info("SerializeBet", logger.Success, " Successfully serialized Bet struct")
 
 	return finalBuffer, nil
+}
+
+func BetsFromRecords(records [][]string) ([]Bet, error) {
+	bets := make([]Bet, 0, len(records))
+	for i, record := range records {
+		bet, err := NewBetFromRecord(record)
+		if err != nil {
+			logger.Error("BetsFromRecords", logger.Fail, " Failed to create Bet from record at index ", i, ": ", err)
+			return nil, err
+		}
+		bets = append(bets, bet)
+	}
+	logger.Info("BetsFromRecords", logger.Success, " Successfully created Bet structs from records")
+	return bets, nil
+}
+
+func BetSize() int {
+	// 1 byte for FirstName length + FirstName bytes
+	// 1 byte for LastName length + LastName bytes
+	// 4 bytes for Id
+	// 1 byte for BirthDate length + BirthDate bytes
+	// 2 bytes for Numbers
+	return 1 + 255 + 1 + 255 + 4 + 1 + 10 + 2 // Assuming max lengths for FirstName, LastName, and BirthDate
 }

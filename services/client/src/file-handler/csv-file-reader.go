@@ -2,29 +2,45 @@ package filehandler
 
 import (
 	"encoding/csv"
+	"errors"
 	"io"
 	"os"
 )
 
-func ReadCSVFile(filePath string) ([][]string, error) {
+type BatchReader struct {
+	file   *os.File
+	reader *csv.Reader
+}
+
+func NewCSVReader(filePath string) (*BatchReader, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	return &BatchReader{
+		file:   file,
+		reader: csv.NewReader(file),
+	}, nil
+}
 
-	var records [][]string
+func (br *BatchReader) ReadBatch(batchSize int) ([][]string, bool, error) {
+	records := make([][]string, 0, batchSize)
 
-	reader := csv.NewReader(file)
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
+	for len(records) < batchSize {
+		record, err := br.reader.Read()
+		if errors.Is(err, io.EOF) {
+			return records, false, nil
 		}
 		if err != nil {
-			return nil, err
+			return records, false, err
 		}
 		records = append(records, record)
 	}
-	return records, nil
+
+	return records, true, nil
+}
+
+// Close libera el descriptor del archivo.
+func (br *BatchReader) Close() error {
+	return br.file.Close()
 }
