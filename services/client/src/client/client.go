@@ -5,21 +5,18 @@ import (
 	"time"
 	"bufio"
 	"os"
-	"encoding/binary"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
-	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
+
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
 const CONNECTION_ATTEMPS_DELAY_MS = 1000 // 200
 
-const ECHO_CLIENT_MESSAGE_AMOUNT = 3
-const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
 const INPUT_FILE = "/app/input/input-"
 const OUTPUT_FILE = "/app/output/output-"
 const FILE_EXTENSION = ".csv"
-const LENGTH_MESSAGE_SIZE = 2
 
 type ClientConfig struct {
 	ServerHost string
@@ -80,48 +77,53 @@ func (client *Client) Run() error {
 		logger.Error(mainAction, logger.Fail, "agency-id", client.config.AgencyId)
 		return err
 	}
-	defer outputFile.Close()	
+	defer outputFile.Close()
 
+	// ENVIO EL AGENCY-ID
+	logger.Info(mainAction, logger.Success, "Sending AGENCY-ID: ", client.config.AgencyId)
+
+	if err := protocol.SendInit(client.conn, []byte(client.config.AgencyId)); err != nil {
+		logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+
+		// Envio todas las apuestas
 	lineCount := 0
 	scanner := bufio.NewScanner(inputFile)
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineCount++
 
-		length_msg := make([]byte, LENGTH_MESSAGE_SIZE) // revisar numero 
-		binary.BigEndian.PutUint16(length_msg, uint16(len(line)))
-
-		if err := safe_socket.SendAll(client.conn, length_msg); err != nil {
-			logger.Error("send-message-length", logger.Fail, "agency-id", client.config.AgencyId)
-			return err
+		if line == "" {
+			continue
 		}
 
-		messageArgs := []any{"agency-id", client.config.AgencyId, "message", line}
-		logger.Info(mainAction, logger.InProgress, messageArgs...)
+		logger.Info(mainAction, logger.Success, "Sending REQUEST: cant-bytes: ", len(line))
 
-		if err := safe_socket.SendAll(client.conn, []byte(line)); err != nil {
-			logger.Error("send-message", logger.Fail, messageArgs...)
-			return err
-		}
-
-		length_response, err := safe_socket.RecvAll(client.conn, LENGTH_MESSAGE_SIZE) 
-		if err != nil {
-			logger.Error("recv-response-length", logger.Fail, messageArgs...)
-			return err
-		}
-
-		responseSize := int(binary.BigEndian.Uint16(length_response))
-		responseBuffer, err := safe_socket.RecvAll(client.conn, responseSize)
-		if err != nil {
-			logger.Error("recv-response", logger.Fail, messageArgs...)
-			return err
-		}
-
-		if _, err := outputFile.WriteString(string(responseBuffer) + "\n"); err != nil {
-			logger.Error("write-output-file", logger.Fail, messageArgs...)
+		if err := protocol.SendRequest(client.conn, []byte(line)); err != nil {
+			logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
 			return err
 		}
 	}
+
+	logger.Info(mainAction, logger.Success,"Sending EOF")
+	if err := protocol.SendEOF(client.conn); err != nil {
+		logger.Error("send-eof", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+
+			// Espero por la rspuesta del server de los winners
+	winners, err := protocol.ReceiveFrom(client.conn)
+	if err != nil {
+		logger.Error("receive-response", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+
+	if _, err := outputFile.WriteString(string(winners.Payload())); err != nil {
+		logger.Error("write-output-file", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+
 	if err := scanner.Err(); err != nil {
 		logger.Error("scan-input-file", logger.Fail, "agency-id", client.config.AgencyId)
 		return err
