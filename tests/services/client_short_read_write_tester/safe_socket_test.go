@@ -95,7 +95,7 @@ func (s *ShortReader) Read(p []byte) (n int, err error) {
 
 	destBufSize := len(p)
 	maxAmountToReturn := min(destBufSize, s.maxChunkSize)
-	maxDataLenToReturn := rand.Intn(maxAmountToReturn + 1)
+	maxDataLenToReturn := rand.Intn(maxAmountToReturn) + 1
 	lenToReturn := min(maxDataLenToReturn, len(s.data))
 	dataToReturn := s.data[:lenToReturn]
 	s.data = s.data[lenToReturn:]

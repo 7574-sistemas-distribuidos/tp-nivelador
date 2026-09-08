@@ -8,6 +8,7 @@ PYTHON_FILES_PATH = "./services/server"
 class Json(TestCase):
     title = "json import"
     error_hint = "Json import is forbidden for this practical task"
+    has_service_logs = False
 
     @staticmethod
     def test() -> None:

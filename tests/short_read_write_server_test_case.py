@@ -12,11 +12,12 @@ class ChunkedSocket(socket.socket):
         self.max_chunk_size = max_chunk_size
 
     def recv(self, bufsize: int, _flags: int = 0) -> bytes:
-        data_len_to_recv = (
-            random.randrange(0, min(bufsize, self.max_chunk_size))
-            if self.max_chunk_size != 1
-            else 1
-        )
+        max_read_size = min(self.max_chunk_size, bufsize)
+        if max_read_size <= 1:
+            data_len_to_recv = 1
+        else:
+            data_len_to_recv = random.randrange(1, max_read_size)
+
         data_to_recv = self.recv_buffer[:data_len_to_recv]
         self.recv_buffer = self.recv_buffer[data_len_to_recv:]
         return data_to_recv
