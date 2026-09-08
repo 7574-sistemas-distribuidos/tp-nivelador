@@ -1,0 +1,10 @@
+services:
+  server:
+    build:
+      context: ./services/server
+      dockerfile: Dockerfile
+    container_name: server
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SERVER_HOST=server
+      - SERVER_PORT=5678
