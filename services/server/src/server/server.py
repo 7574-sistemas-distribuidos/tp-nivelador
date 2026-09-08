@@ -17,15 +17,16 @@ from protocol.messages.serialization.outgoing import (
 
 _BETS_STORAGE_PATH = "bets.csv"
 
-
 class Server:
     def __init__(self, server_host: str, server_port: int) -> None:
-        self.server_host = server_host
-        self.server_port = server_port
+        self._server_host = server_host
+        self._server_port = server_port
         self._lottery = Lottery(_BETS_STORAGE_PATH)
 
     def _handle_client(self, client_socket):
         action = "handle-client"
+        ## TODO: Refactor to remove ifs that are being the state machine of the protocol.
+        ## Code below represents an AgencySession, think of a double dispatch.
         with client_socket:
             message_channel = MessageChannel(client_socket)
             start_bets_sending = message_channel.receive()
@@ -66,7 +67,7 @@ class Server:
         accept_action = "accept-connection"
         handle_action = "handle-client"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-            server_socket.bind((self.server_host, self.server_port))
+            server_socket.bind((self._server_host, self._server_port))
             server_socket.listen()
             while True:
                 try:
