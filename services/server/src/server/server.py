@@ -1,52 +1,86 @@
 import socket
-import logger
-import safe_socket
 
-_ECHO_SERVER_MESSAGE_SIZE = 1024
+import logger
+from lottery.lottery import Lottery
+from protocol.channel import MessageChannel
+from protocol.errors import ProtocolError
+from protocol.messages.deserialization.incoming import (
+    FilledBetMessage,
+    FinalizeBetsSendingMessage,
+    StartBetsSendingMessage,
+)
+from protocol.messages.serialization.outgoing import (
+    BetWinnerMessage,
+    FinalizeBetWinnersSendingMessage,
+    StartBetWinnersSendingMessage,
+)
+
+_BETS_STORAGE_PATH = "bets.csv"
 
 
 class Server:
     def __init__(self, server_host: str, server_port: int) -> None:
         self.server_host = server_host
         self.server_port = server_port
+        self._lottery = Lottery(_BETS_STORAGE_PATH)
 
     def _handle_client(self, client_socket):
         action = "handle-client"
-        message_amount = 0
-        try:
-            logger.info(action, logger.LogResult.in_progress)
-            while True:
-                client_message = safe_socket.recv_all(
-                    client_socket, _ECHO_SERVER_MESSAGE_SIZE
+        with client_socket:
+            message_channel = MessageChannel(client_socket)
+            start_bets_sending = message_channel.receive()
+            if not isinstance(start_bets_sending, StartBetsSendingMessage):
+                raise ProtocolError(
+                    f"expected a start_bets_sending, got {type(start_bets_sending).__name__}"
                 )
-                if not client_message:
-                    logger.info(
-                        action,
-                        logger.LogResult.success,
-                        "messages-amount",
-                        message_amount,
+
+            agency_id = start_bets_sending.agency_id()
+
+            while True:
+                message = message_channel.receive()
+                if isinstance(message, FinalizeBetsSendingMessage):
+                    break
+                if not isinstance(message, FilledBetMessage):
+                    raise ProtocolError(
+                        f"expected a filled_bet or a finalize_bets_sending, "
+                        f"got {type(message).__name__}"
                     )
-                    return
-                message_amount += 1
-                safe_socket.send_all(client_socket, client_message)
-        except Exception as e:
-            logger.error(
-                action, logger.LogResult.fail, "messages-amount", message_amount
-            )
-            raise e
+                bet = message.bet_for(agency_id)
+                self._lottery.store_bets([bet])
+                logger.info(
+                    action,
+                    logger.LogResult.success,
+                    "bet-document",
+                    bet.document,
+                    "bet-number",
+                    bet.number,
+                )
+
+            message_channel.send(StartBetWinnersSendingMessage())
+            for bet in self._lottery.load_bets():
+                if bet.agency_id == agency_id and self._lottery.has_won(bet):
+                    message_channel.send(BetWinnerMessage(bet))
+            message_channel.send(FinalizeBetWinnersSendingMessage())
 
     def run(self):
-        action = "accept-connection"
+        accept_action = "accept-connection"
+        handle_action = "handle-client"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.bind((self.server_host, self.server_port))
             server_socket.listen()
             while True:
                 try:
-                    logger.info(action, logger.LogResult.in_progress)
+                    logger.info(accept_action, logger.LogResult.in_progress)
                     client_socket, _ = server_socket.accept()
                 except Exception as e:
-                    logger.error(action, logger.LogResult.fail)
+                    logger.error(accept_action, logger.LogResult.fail)
                     raise e
-                logger.info(action, logger.LogResult.success)
+                logger.info(accept_action, logger.LogResult.success)
 
-                self._handle_client(client_socket)
+                try:
+                    self._handle_client(client_socket)
+                except (ConnectionError, ProtocolError) as e:
+                    logger.error(handle_action, logger.LogResult.fail, "err", e)
+                except Exception as e:
+                    logger.error(handle_action, logger.LogResult.fail, "err", e)
+                    raise
