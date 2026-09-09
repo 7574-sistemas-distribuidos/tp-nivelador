@@ -2,24 +2,25 @@ package client
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/business"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
-	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
 const CONNECTION_ATTEMPS_DELAY_MS = 200
 
-const ECHO_CLIENT_BUFFER_SIZE = 512
-
 type ClientConfig struct {
 	ServerHost string
 	ServerPort string
-	AgencyId   string
+	AgencyId   int
 	InputFile  string
 	OutputFile string
 }
@@ -62,7 +63,7 @@ func connectToServer(host, port string) (net.Conn, error) {
 }
 
 func (client *Client) Run() error {
-	const mainAction = "test-echo-server"
+	const action = "run-client"
 	defer client.conn.Close()
 
 	inputFile, err := os.Open(client.config.InputFile)
@@ -77,54 +78,129 @@ func (client *Client) Run() error {
 		logger.Error("create-output-file", logger.Fail, "err", err)
 		return err
 	}
+	defer outputFile.Close()
 
-	writer := bufio.NewWriter(outputFile)
-	defer func() {
-		writer.Flush()
-		outputFile.Close()
-	}()
+	channel := protocol.NewMessageChannel(client.conn)
 
-	scanner := bufio.NewScanner(inputFile)
-
-	messageId := 0
-
-	for scanner.Scan() {
-		line := scanner.Text() + "\n"
-		messageId++
-		messageArgs := []any{"agency-id", client.config.AgencyId, "message-id", messageId}
-		logger.Info(mainAction, logger.InProgress, messageArgs...)
-
-		if err := safe_socket.SendAll(client.conn, []byte(line)); err != nil {
-			logger.Error("send-message", logger.Fail, messageArgs...)
-			return err
-		}
-
-		responseBuffer, err := safe_socket.RecvAll(client.conn, ECHO_CLIENT_BUFFER_SIZE)
-		if err != nil {
-			logger.Error("recv-response", logger.Fail, messageArgs...)
-			return err
-		}
-
-		if string(responseBuffer) != line {
-			logger.Error("check-response", logger.Fail, messageArgs...)
-			return fmt.Errorf("server failed to echo message with id %d", messageId)
-		}
-
-		readLine := string(responseBuffer)
-
-		_, err = writer.WriteString(readLine)
-		if err != nil {
-			logger.Error("write-output-file", logger.Fail, messageArgs...)
-			return err
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		logger.Error("read-input-file", logger.Fail, "err", err)
+	if err := client.sendBets(channel, inputFile); err != nil {
 		return err
 	}
 
-	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId)
+	if err := client.receiveBetWinners(channel, outputFile); err != nil {
+		return err
+	}
 
+	logger.Info(action, logger.Success, "agency-id", client.config.AgencyId)
 	return nil
+}
+
+func (client *Client) sendBets(channel *protocol.MessageChannel, inputFile *os.File) error {
+	const action = "send-bets"
+	logger.Info(action, logger.InProgress, "agency-id", client.config.AgencyId)
+
+	startBetsSendingMessage, err := protocol.NewStartBetsSendingMessageFrom(client.config.AgencyId)
+	if err != nil {
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+	if err := channel.Send(startBetsSendingMessage); err != nil {
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+
+	betsSent := 0
+	scanner := bufio.NewScanner(inputFile)
+	for scanner.Scan() {
+		bet, err := business.BetFromLine(scanner.Text())
+		if err != nil {
+			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+			return err
+		}
+
+		filledBet, err := protocol.NewFilledBetMessageFrom(bet)
+		if err != nil {
+			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+			return err
+		}
+
+		if err := channel.Send(filledBet); err != nil {
+			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+			return err
+		}
+		betsSent++
+	}
+	if err := scanner.Err(); err != nil {
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+
+	if err := channel.Send(&protocol.FinalizeBetsSendingMessage{}); err != nil {
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+
+	logger.Info(action, logger.Success, "agency-id", client.config.AgencyId, "bets-sent", betsSent)
+	return nil
+}
+
+func (client *Client) receiveBetWinners(channel *protocol.MessageChannel, outputFile *os.File) error {
+	const action = "receive-bet-winners"
+	logger.Info(action, logger.InProgress, "agency-id", client.config.AgencyId)
+
+	firstMessage, err := channel.Receive()
+	if err != nil {
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+	if _, isStart := firstMessage.(*protocol.StartBetWinnersSendingMessage); !isStart {
+		err := fmt.Errorf("expected a start_bet_winners_sending, got %T", firstMessage)
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+
+	writer := csv.NewWriter(outputFile)
+	winnersReceived := 0
+	for {
+		message, err := channel.Receive()
+		if err != nil {
+			logger.Error(action, logger.Fail, "err", err)
+			return err
+		}
+
+		switch received := message.(type) {
+		case *protocol.BetWinnerMessage:
+			if err := writer.Write(betWinnerRow(received.Bet())); err != nil {
+				logger.Error(action, logger.Fail, "err", err)
+				return err
+			}
+			winnersReceived++
+		case *protocol.FinalizeBetWinnersSendingMessage:
+			writer.Flush()
+			if err := writer.Error(); err != nil {
+				logger.Error("write-output-file", logger.Fail, "err", err)
+				return err
+			}
+			logger.Info(
+				action, logger.Success,
+				"agency-id", client.config.AgencyId, "winners-received", winnersReceived,
+			)
+			return nil
+		default:
+			err := fmt.Errorf(
+				"expected a bet_winner or a finalize_bet_winners_sending, got %T", received,
+			)
+			logger.Error(action, logger.Fail, "err", err)
+			return err
+		}
+	}
+}
+
+func betWinnerRow(bet business.Bet) []string {
+	return []string{
+		bet.FirstName,
+		bet.LastName,
+		strconv.Itoa(bet.Document),
+		bet.Birthdate,
+		strconv.Itoa(bet.Number),
+	}
 }
