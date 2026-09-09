@@ -2,16 +2,23 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"strconv"
 
 	client "github.com/7574-sistemas-distribuidos/tp-nivelador/src/client"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 )
 
 func loadConfig() (client.ClientConfig, error) {
-	agencyId := os.Getenv("AGENCY_ID")
-	if agencyId == "" {
+	rawAgencyId := os.Getenv("AGENCY_ID")
+	if rawAgencyId == "" {
 		return client.ClientConfig{}, errors.New("AGENCY_ID environment variable is required")
+	}
+
+	agencyId, err := strconv.Atoi(rawAgencyId)
+	if err != nil {
+		return client.ClientConfig{}, fmt.Errorf("AGENCY_ID must be a number: %w", err)
 	}
 
 	serverHost := os.Getenv("SERVER_HOST")
