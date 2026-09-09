@@ -79,13 +79,23 @@ func (client *Client) Run() error {
 	}
 	defer outputFile.Close()
 
+	seq_num := 0
 	// ENVIO EL AGENCY-ID
 	logger.Info(mainAction, logger.Success, "Sending AGENCY-ID: ", client.config.AgencyId)
-
-	if err := protocol.SendInit(client.conn, []byte(client.config.AgencyId)); err != nil {
-		logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
-		return err
+	enviado_correctamente := false
+	for !enviado_correctamente {
+		if err := protocol.SendInit(client.conn, seq_num, []byte(client.config.AgencyId)); err != nil {
+				logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
+				return err
+		}
+		ack, err := protocol.ReceiveFrom(client.conn)
+		if err != nil {
+			logger.Error("receive-ack", logger.Fail, "agency-id", client.config.AgencyId)
+			return err
+		}
+		enviado_correctamente = seq_num == ack.SequenceNumber()
 	}
+	seq_num += 1
 
 		// Envio todas las apuestas
 	lineCount := 0
@@ -100,17 +110,40 @@ func (client *Client) Run() error {
 
 		logger.Info(mainAction, logger.Success, "Sending REQUEST: cant-bytes: ", len(line))
 
-		if err := protocol.SendRequest(client.conn, []byte(line)); err != nil {
-			logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
-			return err
+		enviado_correctamente = false
+		for !enviado_correctamente {
+			if err := protocol.SendRequest(client.conn, seq_num, []byte(line)); err != nil {
+				logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
+				return err
+			}
+
+			ack, err := protocol.ReceiveFrom(client.conn)
+			if err != nil {
+				logger.Error("receive-ack", logger.Fail, "agency-id", client.config.AgencyId)
+				return err
+			}
+			enviado_correctamente = seq_num == ack.SequenceNumber()
 		}
+		seq_num += 1
 	}
 
 	logger.Info(mainAction, logger.Success,"Sending EOF")
-	if err := protocol.SendEOF(client.conn); err != nil {
-		logger.Error("send-eof", logger.Fail, "agency-id", client.config.AgencyId)
-		return err
+	enviado_correctamente = false
+	for !enviado_correctamente {
+		if err := protocol.SendEOF(client.conn, seq_num); err != nil {
+			logger.Error("send-eof", logger.Fail, "agency-id", client.config.AgencyId)
+			return err
+		}
+
+		ack, err := protocol.ReceiveFrom(client.conn)
+		if err != nil {
+			logger.Error("receive-ack", logger.Fail, "agency-id", client.config.AgencyId)
+			return err
+		}
+		enviado_correctamente = seq_num == ack.SequenceNumber()
 	}
+	seq_num += 1
+
 
 			// Espero por la rspuesta del server de los winners
 	winners, err := protocol.ReceiveFrom(client.conn)

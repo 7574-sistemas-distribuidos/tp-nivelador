@@ -1,12 +1,11 @@
 import socket
 import logger 
 import lottery
-from protocol import PacketType, receive_from, send_response
+from protocol import PacketType, receive_from, send_response, send_ack
 
 
 LENGTH_MESSAGE_SIZE = 4
-STORAGE_FILE = "bets"
-FILE_EXTENSION = ".csv"
+BETS_FILE = "bets.csv"
 
 class Server:
     def __init__(self, server_host: str, server_port: int) -> None:
@@ -15,12 +14,10 @@ class Server:
 
     def _handle_client(self, client_socket):
         action = "handle-client"
-        storage_path = STORAGE_FILE+FILE_EXTENSION
-        with open(storage_path, 'w') as f:
-            pass
-        bets = lottery.Lottery(storage_path)
-        message_amount = 0
+        open(BETS_FILE, 'w').close()   #limpiamos el archivo al iniciar una conexion
+        bets = lottery.Lottery(BETS_FILE)
         agency_id = None
+        last_valid_seq_num = -1
         try:
             logger.info(action, logger.LogResult.in_progress)
             while True:
@@ -28,40 +25,38 @@ class Server:
                 logger.info("debug-packet", "type", packet.type(), "size", packet.payload_size())
                 if packet.type() == PacketType.INIT.value:
                     agency_id = int(packet.payload_to_string())
+                    send_ack(client_socket, packet.sequence_number(), packet.payload())
+                    logger.info(action, logger.LogResult.in_progress, "init-received", "agendy-id: ", agency_id)
                 elif packet.type() == PacketType.REQUEST.value:
                     data = packet.payload_to_string().split(',')
                     if len(data) != 5:
-                        # poner logger error
+                        logger.error("invalid bet line: ", packet.payload_to_string())
+                        send_ack(client_socket, last_valid_seq_num, b'ERROR')
                         continue
-                    first_name = data[0]
-                    last_name = data[1]
-                    document = int(data[2])
-                    birthdate = data[3]
-                    number = int(data[4])
+                    first_name, last_name, document, birthdate, number = data[0], data[1], int(data[2]), data[3], int(data[4])
+
                     bet = lottery.Bet(agency_id, first_name, last_name, document, birthdate, number)
                     bets.store_bets([bet])
-                    message_amount += 1
-                    logger.info(action, logger.LogResult.in_progress, "bets-stored", message_amount)
+                    logger.info(action, logger.LogResult.in_progress, "sequence number received: ", last_valid_seq_num)
+                    send_ack(client_socket, packet.sequence_number(), packet.payload())
                 elif packet.type() == PacketType.EOF.value:
-                    # recibo el fin de las apuestas
-                    # calculo el ganador
+                    send_ack(client_socket, packet.sequence_number(), packet.payload())
                     all_bets = list(bets.load_bets())
                     winners = [bet for bet in all_bets if bets.has_won(bet)]
-                    # serializar a csv los winners
                     winners_str = ''
                     for w in winners:
                         winners_str += f"{w.first_name},{w.last_name},{w.document},{w.birthdate},{w.number}\n"
-                    send_response(client_socket, winners_str.encode('utf-8'))
+                    send_response(client_socket, 0, winners_str.encode('utf-8'))
                     logger.info(action, logger.LogResult.success, "winners-sent", len(winners))
                     break
                 else:
-                    # poner logger error
+                    logger.error("unknown packet type: ", packet.type())
+                    send_ack(client_socket, packet.sequence_number(), b'UNKNOWN')
                     break
         except Exception as e:
             logger.error(action, logger.LogResult.fail, "error", str(e))
             raise e       
         
-
     def run(self):
         action = "accept-connection"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
