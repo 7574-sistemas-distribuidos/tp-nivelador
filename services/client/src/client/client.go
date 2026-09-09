@@ -5,9 +5,8 @@ import (
 	"time"
 	"bufio"
 	"os"
-
+	"fmt"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
-
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 )
 
@@ -17,6 +16,8 @@ const CONNECTION_ATTEMPS_DELAY_MS = 1000 // 200
 const INPUT_FILE = "/app/input/input-"
 const OUTPUT_FILE = "/app/output/output-"
 const FILE_EXTENSION = ".csv"
+const RETRY_MAX = 5
+const INIT_SEQ_NUM = 0
 
 type ClientConfig struct {
 	ServerHost string
@@ -62,7 +63,7 @@ func connectToServer(host, port string) (net.Conn, error) {
 }
 
 func (client *Client) Run() error {
-	const mainAction = "test-echo-server"
+	const mainAction = "client-run"
 	defer client.conn.Close()
 
 	inputFile, err := os.Open(INPUT_FILE + client.config.AgencyId + FILE_EXTENSION)
@@ -78,91 +79,164 @@ func (client *Client) Run() error {
 		return err
 	}
 	defer outputFile.Close()
+	
+	seq_num := INIT_SEQ_NUM
+	if err := sendInitPacket(client.conn, &seq_num, client.config.AgencyId); err != nil {
+		logger.Error("send-init", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
 
-	seq_num := 0
-	// ENVIO EL AGENCY-ID
-	logger.Info(mainAction, logger.Success, "Sending AGENCY-ID: ", client.config.AgencyId)
-	enviado_correctamente := false
-	for !enviado_correctamente {
-		if err := protocol.SendInit(client.conn, seq_num, []byte(client.config.AgencyId)); err != nil {
-				logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
-				return err
-		}
-		ack, err := protocol.ReceiveFrom(client.conn)
-		if err != nil {
-			logger.Error("receive-ack", logger.Fail, "agency-id", client.config.AgencyId)
+	if err := sendBets(client.conn, &seq_num, inputFile, client.config.AgencyId) ; err != nil {
+		logger.Error("send-bets" , logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+
+	if err := sendEOF(client.conn, &seq_num, client.config.AgencyId) ; err != nil {
+		logger.Error("send-EOF" , logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+	
+	if err := receiveWinners(client.conn, seq_num, outputFile); err != nil {
+		logger.Error("receive-winner", logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
+
+	return nil
+}
+
+func sendInitPacket(conn net.Conn, seq_num *int, agencyId string) error {
+	const mainAction = "send-init"
+	logger.Info(mainAction, logger.Success, "Sending AGENCY-ID: ", agencyId)
+	sent_succesfully := false
+	for retries := 0; retries < RETRY_MAX && !sent_succesfully; retries++ {
+		if err := protocol.SendInit(conn, *seq_num, []byte(agencyId)); err != nil {
+			logger.Error(mainAction, logger.Fail, "agency-id", agencyId)
 			return err
 		}
-		enviado_correctamente = seq_num == ack.SequenceNumber()
+		ack, err := protocol.ReceiveFrom(conn)
+		if err != nil {
+			logger.Error(mainAction, logger.Fail, "agency-id", agencyId)
+			return err
+		}
+		sent_succesfully = *seq_num == ack.SequenceNumber()
 	}
-	seq_num += 1
+	if !sent_succesfully {
+		return fmt.Errorf("no se pudo enviar INIT después de %d reintentos", RETRY_MAX)
+	}
+	*seq_num = *seq_num + 1
+	return  nil
+}
 
-		// Envio todas las apuestas
+func sendBets(conn net.Conn, seq_num *int, inputFile *os.File, agencyId string) error {
+	const mainAction = "send-bets"
 	lineCount := 0
 	scanner := bufio.NewScanner(inputFile)
+	if err := scanner.Err(); err != nil {
+		logger.Error("scan-input-file", logger.Fail, "agency-id", agencyId)
+		return err
+	}
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineCount++
-
-		if line == "" {
+ 
+		bet, err := protocol.ParseBetFromCSVLine(line, agencyId)
+		if err != nil {
+			logger.Error(mainAction, "parse-error", "line", lineCount, "error", err)
 			continue
 		}
 
 		logger.Info(mainAction, logger.Success, "Sending REQUEST: cant-bytes: ", len(line))
 
-		enviado_correctamente = false
-		for !enviado_correctamente {
-			if err := protocol.SendRequest(client.conn, seq_num, []byte(line)); err != nil {
-				logger.Error("send-request", logger.Fail, "agency-id", client.config.AgencyId)
+		sent_succesfully := false
+		
+		for retries := 0; retries < RETRY_MAX && !sent_succesfully; retries++ {
+			if err := protocol.SendRequest(conn, *seq_num, bet.ToBytes()); err != nil {
+				logger.Error("send-request", logger.Fail, "agency-id", agencyId)
 				return err
 			}
 
-			ack, err := protocol.ReceiveFrom(client.conn)
+			ack, err := protocol.ReceiveFrom(conn)
 			if err != nil {
-				logger.Error("receive-ack", logger.Fail, "agency-id", client.config.AgencyId)
+				logger.Error("receive-ack", logger.Fail, "agency-id", agencyId)
 				return err
 			}
-			enviado_correctamente = seq_num == ack.SequenceNumber()
+			sent_succesfully = *seq_num == ack.SequenceNumber()
 		}
-		seq_num += 1
-	}
-
-	logger.Info(mainAction, logger.Success,"Sending EOF")
-	enviado_correctamente = false
-	for !enviado_correctamente {
-		if err := protocol.SendEOF(client.conn, seq_num); err != nil {
-			logger.Error("send-eof", logger.Fail, "agency-id", client.config.AgencyId)
-			return err
+		if !sent_succesfully {
+			return fmt.Errorf("no se pudo enviar el paquete después de %d reintentos", RETRY_MAX)
 		}
-
-		ack, err := protocol.ReceiveFrom(client.conn)
-		if err != nil {
-			logger.Error("receive-ack", logger.Fail, "agency-id", client.config.AgencyId)
-			return err
-		}
-		enviado_correctamente = seq_num == ack.SequenceNumber()
-	}
-	seq_num += 1
-
-
-			// Espero por la rspuesta del server de los winners
-	winners, err := protocol.ReceiveFrom(client.conn)
-	if err != nil {
-		logger.Error("receive-response", logger.Fail, "agency-id", client.config.AgencyId)
-		return err
+		*seq_num = *seq_num + 1
 	}
 
-	if _, err := outputFile.WriteString(string(winners.Payload())); err != nil {
-		logger.Error("write-output-file", logger.Fail, "agency-id", client.config.AgencyId)
-		return err
-	}
-
-	if err := scanner.Err(); err != nil {
-		logger.Error("scan-input-file", logger.Fail, "agency-id", client.config.AgencyId)
-		return err
-	}
-	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId, "lines-read", lineCount)
-	
-
+	logger.Info(mainAction, logger.Success, "agency-id", agencyId, "lines-read", lineCount)
 	return nil
 }
+
+func sendEOF(conn net.Conn, seq_num *int, agencyId string) error {
+	const mainAction = "send-EOF"
+	logger.Info(mainAction, logger.Success,"Sending EOF")
+	sent_succesfully := false
+	for retries := 0; retries < RETRY_MAX && !sent_succesfully; retries++ {
+		if err := protocol.SendEOF(conn, *seq_num); err != nil {
+			logger.Error("send-eof", logger.Fail, "agency-id", agencyId)
+			return err
+		}
+		ack, err := protocol.ReceiveFrom(conn)
+		if err != nil {
+			logger.Error("receive-ack", logger.Fail, "agency-id", agencyId)
+			return err
+		}
+		sent_succesfully = *seq_num == ack.SequenceNumber()
+	}
+	if !sent_succesfully {
+		return fmt.Errorf("no se pudo enviar EOF después de %d reintentos", RETRY_MAX)
+	}
+	*seq_num = *seq_num + 1
+	return nil
+}
+
+func receiveWinners(conn net.Conn, seq_num int, outputFile *os.File) error {
+	const mainAction = "receive-winner"
+	for {
+		pkt, err := protocol.ReceiveFrom(conn)
+		if err != nil {
+			logger.Error("receive-winner", logger.Fail, "error", err)
+			return err
+		}
+
+		if pkt.Type() == protocol.EOF {
+			if err := protocol.SendACK(conn, pkt.SequenceNumber(), []byte{}); err != nil {
+				logger.Error("send-ack-eof", logger.Fail, "error", err)
+				return err
+			}
+			logger.Info(mainAction, logger.Success, "EOF-final-received")
+			break
+		} else if pkt.Type() == protocol.RESPONSE {
+			var bet protocol.Bet
+        	if err := bet.FromBytes(pkt.Payload()); err != nil{
+				logger.Error("parse-winner", logger.Fail, "error", err)
+				protocol.SendACK(conn, seq_num, []byte{})
+				continue
+			}
+
+			// Escribir en archivo de salida
+			line, _ := protocol.ParseCSVLineFromBet(bet)
+			if _, err := outputFile.WriteString(line + "\n"); err != nil {
+				logger.Error("write-output", logger.Fail, "error", err)
+				return err
+			}
+
+			// Enviar ACK confirmando recepción
+			if err := protocol.SendACK(conn, pkt.SequenceNumber(), []byte{}); err != nil {
+				logger.Error("send-ack-response", logger.Fail, "error", err)
+				return err
+			}
+			logger.Info(mainAction, logger.InProgress, "winner-received", "seq", pkt.SequenceNumber())
+		} else {
+			logger.Error("unexpected-packet", "type", pkt.Type())
+			return fmt.Errorf("paquete inesperado: %v", pkt.Type())
+		}
+	}
+	return nil
+}
+
