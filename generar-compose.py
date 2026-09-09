@@ -1,6 +1,5 @@
 import sys
 import yaml
-import os
 
 def generate_compose(filename, count):
 

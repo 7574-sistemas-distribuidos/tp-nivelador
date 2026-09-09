@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+# yaml-language-server: $schema=https://compose-spec.github.io/compose-spec.json
 services:
   server:
     container_name: server
@@ -9,10 +9,8 @@ services:
     - PYTHONUNBUFFERED=1
     - SERVER_HOST=server
     - SERVER_PORT=5678
-    - STORAGE_DIR=/app/bets.csv
+    - STORAGE_DIR=/tmp/bets.csv
     - AGENCY_QUORUM_MIN=1
-    volumes:
-    - ./output/server:/app:rw
   client1:
     container_name: client1
     build:
@@ -24,6 +22,24 @@ services:
     - SERVER_PORT=5678
     - INPUT_FILE=/input/input-test-1.csv
     - OUTPUT_FILE=/output/winners-1.csv
+    - BATCH_SIZE=2
+    volumes:
+    - ./input:/input:ro
+    - ./output:/output:rw
+    depends_on:
+    - server
+
+  client2:
+    container_name: client2
+    build:
+      context: ./services/client
+      dockerfile: Dockerfile
+    environment:
+    - AGENCY_ID=1
+    - SERVER_HOST=server
+    - SERVER_PORT=5678
+    - INPUT_FILE=/input/input-test-2.csv
+    - OUTPUT_FILE=/output/winners-2.csv
     - BATCH_SIZE=2
     volumes:
     - ./input:/input:ro
