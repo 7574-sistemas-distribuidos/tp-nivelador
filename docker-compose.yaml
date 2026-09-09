@@ -1,23 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
 services:
   server:
+    container_name: server
     build:
       context: ./services/server
       dockerfile: Dockerfile
-    container_name: server
     environment:
-      - PYTHONUNBUFFERED=1
-      - SERVER_HOST=server
-      - SERVER_PORT=5678
-
-  client_0:
+    - PYTHONUNBUFFERED=1
+    - SERVER_HOST=server
+    - SERVER_PORT=5678
+    - STORAGE_DIR=/app/bets.csv
+    - AGENCY_QUORUM_MIN=1
+    volumes:
+    - ./output/server:/app:rw
+  client1:
+    container_name: client1
     build:
       context: ./services/client
       dockerfile: Dockerfile
-    container_name: client_0
-    depends_on:
-      - server
     environment:
-      - AGENCY_ID=0
-      - SERVER_HOST=server
-      - SERVER_PORT=5678
-      
+    - AGENCY_ID=1
+    - SERVER_HOST=server
+    - SERVER_PORT=5678
+    - INPUT_FILE=/input/input-test-1.csv
+    - OUTPUT_FILE=/output/winners-1.csv
+    - BATCH_SIZE=2
+    volumes:
+    - ./input:/input:ro
+    - ./output:/output:rw
+    depends_on:
+    - server

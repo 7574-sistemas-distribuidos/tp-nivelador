@@ -152,10 +152,10 @@ func (client *Client) Run() error {
 	}
 	var records [][]string
 	for _, winner := range winners {
-		record := entities.WinnerToRecord(winner)
+		record := entities.BetToRecord(winner)
 		records = append(records, record)
 	}
-	outputFilePath := client.config.OutputDir + "/winners-" + client.config.AgencyId + ".csv"
+	outputFilePath := client.config.OutputDir
 	werr := filehandler.WriteCSVFile(outputFilePath, records)
 	if werr != nil {
 		logger.Error("create-csv-writer", logger.Fail, "err", err)

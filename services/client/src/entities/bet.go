@@ -3,6 +3,7 @@ package entities
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
@@ -73,6 +74,64 @@ func SerializeBet(p Bet) ([]byte, error) {
 	logger.Info("SerializeBet", logger.Success, " Successfully serialized Bet struct")
 
 	return finalBuffer, nil
+}
+
+func DeserializeBet(data []byte) (Bet, error) {
+	offset := 0
+	if len(data) < 1 {
+		return Bet{}, fmt.Errorf("insufficient data for first name length")
+	}
+	firstNameLength := int(data[offset])
+	offset += 1
+
+	if len(data) < offset+firstNameLength+1 {
+		return Bet{}, fmt.Errorf("insufficient data for first name or last name length")
+	}
+	firstName := string(data[offset : offset+firstNameLength])
+	offset += firstNameLength
+
+	lastNameLength := int(data[offset])
+	offset += 1
+
+	if len(data) < offset+lastNameLength+4+1 {
+		return Bet{}, fmt.Errorf("insufficient data for last name, id or birthdate length")
+	}
+	lastName := string(data[offset : offset+lastNameLength])
+	offset += lastNameLength
+
+	id := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	birthDateLength := int(data[offset])
+	offset += 1
+
+	if len(data) < offset+birthDateLength+2 {
+		return Bet{}, fmt.Errorf("insufficient data for birthdate or numbers")
+	}
+	birthDate := string(data[offset : offset+birthDateLength])
+	offset += birthDateLength
+
+	numbers := binary.BigEndian.Uint16(data[offset : offset+2])
+
+	logger.Info("DeserializeBet", logger.Success, " Successfully deserialized Bet struct from data")
+
+	return Bet{
+		FirstName: firstName,
+		LastName:  lastName,
+		Id:        id,
+		BirthDate: birthDate,
+		Numbers:   numbers,
+	}, nil
+}
+
+func BetToRecord(bet Bet) []string {
+	return []string{
+		bet.FirstName,
+		bet.LastName,
+		strconv.FormatUint(uint64(bet.Id), 10),
+		bet.BirthDate,
+		strconv.FormatUint(uint64(bet.Numbers), 10),
+	}
 }
 
 func BetsFromRecords(records [][]string) ([]Bet, error) {

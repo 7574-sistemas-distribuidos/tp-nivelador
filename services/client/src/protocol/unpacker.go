@@ -7,20 +7,20 @@ import (
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 )
 
-func UnpackWinners(winners []byte) ([]entities.Winner, error) {
+func UnpackWinners(winners []byte) ([]entities.Bet, error) {
 	logger.Info("unpack-winners", logger.InProgress)
 	offset := 0
 	winnersAmount := binary.BigEndian.Uint32(winners[offset : offset+4])
 	offset += 4
 	logger.Info("unpack-winners", logger.InProgress, "winners-amount", winnersAmount)
-	var winnersList []entities.Winner
+	var winnersList []entities.Bet
 
 	for range winnersAmount {
 		winnerLength := binary.BigEndian.Uint32(winners[offset : offset+4])
 		offset += 4
 		logger.Info("unpack-winners", logger.InProgress, "winner-length", winnerLength)
 		winnerData := winners[offset : offset+int(winnerLength)]
-		winner, err := entities.DeserializeWinner(winnerData)
+		winner, err := entities.DeserializeBet(winnerData)
 		if err != nil {
 			return nil, err
 		}

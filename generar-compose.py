@@ -39,7 +39,7 @@ def generate_compose(filename, count):
                 "SERVER_HOST=server",
                 "SERVER_PORT=5678",
                 "INPUT_FILE=/app/input.csv",
-                "OUTPUT_DIR=/app/output"
+                "OUTPUT_FILE=/app/output"
             ],
             "volumes": [
                 f"./input/input-{i}.csv:/app/input.csv:ro",

@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PWD := $(shell pwd)
-DOCKER_FILE_PATH ?= docker-compose.dev.yaml
+DOCKER_FILE_PATH ?= docker-compose.yaml
 
 up:
 	mkdir -p output
