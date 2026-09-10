@@ -21,6 +21,7 @@ type ClientConfig struct {
 	AgencyId   string
 	InputFile  string
 	OutputFile string
+	BatchSize  int
 }
 
 type Client struct {
@@ -82,32 +83,54 @@ func (client *Client) Run() error {
 
 	scanner := bufio.NewScanner(inputFile)
 	lineCount := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		if len(strings.TrimSpace(line)) == 0 {
-			continue
-		}
-		lineCount++
+	var batch []string
 
-		payload := []byte(client.config.AgencyId + "," + line)
+	sendBatch := func() error {
+		if len(batch) == 0 {
+			return nil
+		}
+		payload := []byte(strings.Join(batch, "\n") + "\n")
 		if err := protocol.SendMsg(client.conn, protocol.MsgBet, payload); err != nil {
-			logger.Error("send-bet", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
+			logger.Error("send-bet-batch", logger.Fail, "agency-id", client.config.AgencyId, "bets", len(batch), "err", err)
 			return err
 		}
 
 		msgType, _, err := protocol.RecvMsg(client.conn)
 		if err != nil {
-			logger.Error("recv-ack", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
+			logger.Error("recv-ack", logger.Fail, "agency-id", client.config.AgencyId, "err", err)
 			return err
 		}
 		if msgType != protocol.MsgAck {
 			logger.Error("check-ack", logger.Fail, "agency-id", client.config.AgencyId, "expected", protocol.MsgAck, "got", msgType)
 			return fmt.Errorf("unexpected message type: %d", msgType)
 		}
+
+		batch = batch[:0]
+		return nil
+	}
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 {
+			continue
+		}
+		lineCount++
+		batch = append(batch, client.config.AgencyId+","+line)
+
+		if len(batch) >= client.config.BatchSize {
+			if err := sendBatch(); err != nil {
+				return err
+			}
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		logger.Error("scan-file", logger.Fail, "agency-id", client.config.AgencyId, "err", err)
+		return err
+	}
+
+	// Enviar remanente del último lote
+	if err := sendBatch(); err != nil {
 		return err
 	}
 

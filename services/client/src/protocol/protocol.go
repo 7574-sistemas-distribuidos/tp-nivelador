@@ -17,17 +17,12 @@ const (
 const HeaderSize = 5
 
 func SendMsg(socket io.Writer, msgType byte, payload []byte) error {
-	header := make([]byte, HeaderSize)
-	header[0] = msgType
-	binary.BigEndian.PutUint32(header[1:], uint32(len(payload)))
+	msg := make([]byte, HeaderSize+len(payload))
+	msg[0] = msgType
+	binary.BigEndian.PutUint32(msg[1:HeaderSize], uint32(len(payload)))
+	copy(msg[HeaderSize:], payload)
 
-	if err := safe_socket.SendAll(socket, header); err != nil {
-		return err
-	}
-	if len(payload) > 0 {
-		return safe_socket.SendAll(socket, payload)
-	}
-	return nil
+	return safe_socket.SendAll(socket, msg)
 }
 
 func RecvMsg(socket io.Reader) (byte, []byte, error) {
