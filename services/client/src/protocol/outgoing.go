@@ -28,24 +28,28 @@ func (message *StartBetsSendingMessage) Payload() []byte {
 	return []byte{byte(message.agencyId)}
 }
 
-type FilledBetMessage struct {
-	betRecord []byte
+type FilledBetsMessage struct {
+	betsRecords []byte
 }
 
-func NewFilledBetMessageFrom(bet business.Bet) (*FilledBetMessage, error) {
-	betBytes, err := betToBytes(bet)
-	if err != nil {
-		return nil, err
+func NewFilledBetsMessageFrom(bets []business.Bet) (*FilledBetsMessage, error) {
+	var betsBytes []byte
+	for _, bet := range bets {
+		betBytes, err := betToBytes(bet)
+		if err != nil {
+			return nil, err
+		}
+		betsBytes = append(betsBytes, betBytes...)
 	}
-	return &FilledBetMessage{betRecord: betBytes}, nil
+	return &FilledBetsMessage{betsRecords: betsBytes}, nil
 }
 
-func (message *FilledBetMessage) Type() byte {
-	return filledBetType
+func (message *FilledBetsMessage) Type() byte {
+	return filledBetsType
 }
 
-func (message *FilledBetMessage) Payload() []byte {
-	return message.betRecord
+func (message *FilledBetsMessage) Payload() []byte {
+	return message.betsRecords
 }
 
 type FinalizeBetsSendingMessage struct {

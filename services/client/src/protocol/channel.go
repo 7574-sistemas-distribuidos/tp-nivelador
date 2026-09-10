@@ -16,7 +16,7 @@ const (
 
 const (
 	startBetsSendingType          = 0x01
-	filledBetType                 = 0x02
+	filledBetsType                = 0x02
 	finalizeBetsSendingType       = 0x03
 	startBetWinnersSendingType    = 0x04
 	betWinnerType                 = 0x05

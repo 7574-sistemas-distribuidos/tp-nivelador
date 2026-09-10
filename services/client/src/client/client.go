@@ -23,6 +23,7 @@ type ClientConfig struct {
 	AgencyId   int
 	InputFile  string
 	OutputFile string
+	BatchSize  int
 }
 
 type Client struct {
@@ -109,15 +110,45 @@ func (client *Client) sendBets(channel *protocol.MessageChannel, inputFile *os.F
 	}
 
 	betsSent := 0
+	batchSize := client.config.BatchSize
+	betBatch := make([]string, 0, batchSize)
 	scanner := bufio.NewScanner(inputFile)
 	for scanner.Scan() {
-		bet, err := business.BetFromLine(scanner.Text())
+		betBatch = append(betBatch, scanner.Text())
+		if len(betBatch) == batchSize {
+			bets, err := business.BetsFromBatch(betBatch)
+			if err != nil {
+				logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+				return err
+			}
+
+			filledBet, err := protocol.NewFilledBetsMessageFrom(bets)
+			if err != nil {
+				logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+				return err
+			}
+
+			if err := channel.Send(filledBet); err != nil {
+				logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+				return err
+			}
+			betsSent += len(betBatch)
+			betBatch = betBatch[:0]
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		logger.Error(action, logger.Fail, "err", err)
+		return err
+	}
+
+	if len(betBatch) > 0 {
+		bets, err := business.BetsFromBatch(betBatch)
 		if err != nil {
 			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
 			return err
 		}
 
-		filledBet, err := protocol.NewFilledBetMessageFrom(bet)
+		filledBet, err := protocol.NewFilledBetsMessageFrom(bets)
 		if err != nil {
 			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
 			return err
@@ -127,11 +158,7 @@ func (client *Client) sendBets(channel *protocol.MessageChannel, inputFile *os.F
 			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
 			return err
 		}
-		betsSent++
-	}
-	if err := scanner.Err(); err != nil {
-		logger.Error(action, logger.Fail, "err", err)
-		return err
+		betsSent += len(betBatch)
 	}
 
 	if err := channel.Send(&protocol.FinalizeBetsSendingMessage{}); err != nil {

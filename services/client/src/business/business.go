@@ -35,3 +35,17 @@ func BetFromLine(line string) (Bet, error) {
 		LastName:  fields[1],
 	}, nil
 }
+
+func BetsFromBatch(lines []string) ([]Bet, error) {
+	bets := make([]Bet, 0, len(lines))
+
+	for _, line := range lines {
+		bet, err := BetFromLine(line)
+		if err != nil {
+			return nil, err
+		}
+		bets = append(bets, bet)
+	}
+
+	return bets, nil
+}
