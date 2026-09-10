@@ -16,7 +16,8 @@ def generate_compose(filename, count):
                     "PYTHONUNBUFFERED=1",
                     "SERVER_HOST=server",
                     "SERVER_PORT=5678",
-                    "STORAGE_DIR=/app/storage"
+                    "STORAGE_DIR=/tmp/bets.csv",
+                    f"AGENCY_QUORUM_MIN={count}"
                 ],
             }
         },
@@ -34,12 +35,12 @@ def generate_compose(filename, count):
                 f"AGENCY_ID={i}",
                 "SERVER_HOST=server",
                 "SERVER_PORT=5678",
-                "INPUT_FILE=/app/input.csv",
-                "OUTPUT_FILE=/app/output"
+                f"INPUT_FILE=/input/input-{i}.csv",
+                f"OUTPUT_FILE=/output/winners-{i}.csv"
             ],
             "volumes": [
-                f"./input/input-{i}.csv:/app/input.csv:ro",
-               # f"./output/output-{i}:/app/output:rw"   
+                f"./input:/input:ro",
+                f"./output:/output:rw"
             ],
             "depends_on": ["server"]
         }

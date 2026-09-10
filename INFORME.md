@@ -1,1 +1,10 @@
-Redactar un breve informe en donde se detallen los aspectos más importantes de la solución provista, como ser el protocolo de comunicación implementado y los mecanismos para sincronizar la ejecución concurrente.
+# TP0 NIVELADOR
+
+**para generar compose** 
+
+
+```python
+python3 generar-compose.py "OUTPUT_FILE" "CLIENT_COUNT"
+```
+
+
