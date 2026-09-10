@@ -5,6 +5,7 @@
 CLIENTES="$1"
 SERVER_PORT=5678
 FILE_NAME="docker-compose.yaml"
+BATCH_SIZE=500
 
 if [ -z "$CLIENTES" ] || [ "$CLIENTES" -le 0 ]; then
   echo "No client specified. Please provide the amount of clients as arguments."
@@ -43,5 +44,6 @@ for ((i=0; i<CLIENTES; i++)); do
       - AGENCY_ID=$i
       - SERVER_HOST=server
       - SERVER_PORT=$SERVER_PORT
+      - BATCH_SIZE=$BATCH_SIZE
 EOF
 done

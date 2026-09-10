@@ -11,7 +11,7 @@ import (
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
-const CONNECTION_ATTEMPS_DELAY_MS = 1000 // 200
+const CONNECTION_ATTEMPS_DELAY_MS = 500 // 200
 
 const INPUT_FILE = "/app/input/input-"
 const OUTPUT_FILE = "/app/output/output-"
@@ -23,6 +23,7 @@ type ClientConfig struct {
 	ServerHost string
 	ServerPort string
 	AgencyId   string
+	BatchSize string
 }
 
 type Client struct {
@@ -81,12 +82,17 @@ func (client *Client) Run() error {
 	defer outputFile.Close()
 	
 	seq_num := INIT_SEQ_NUM
+	batchSize, err := protocol.StringToInt(client.config.BatchSize)
+	if err != nil {
+		logger.Error(mainAction, logger.Fail, "agency-id", client.config.AgencyId)
+		return err
+	}
 	if err := sendInitPacket(client.conn, &seq_num, client.config.AgencyId); err != nil {
 		logger.Error("send-init", logger.Fail, "agency-id", client.config.AgencyId)
 		return err
 	}
 
-	if err := sendBets(client.conn, &seq_num, inputFile, client.config.AgencyId) ; err != nil {
+	if err := sendBets(client.conn, &seq_num, inputFile, client.config.AgencyId, batchSize) ; err != nil {
 		logger.Error("send-bets" , logger.Fail, "agency-id", client.config.AgencyId)
 		return err
 	}
@@ -127,14 +133,11 @@ func sendInitPacket(conn net.Conn, seq_num *int, agencyId string) error {
 	return  nil
 }
 
-func sendBets(conn net.Conn, seq_num *int, inputFile *os.File, agencyId string) error {
+func sendBets(conn net.Conn, seq_num *int, inputFile *os.File, agencyId string, batchSize int) error {
 	const mainAction = "send-bets"
 	lineCount := 0
 	scanner := bufio.NewScanner(inputFile)
-	if err := scanner.Err(); err != nil {
-		logger.Error("scan-input-file", logger.Fail, "agency-id", agencyId)
-		return err
-	}
+	var batch []*protocol.Bet
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineCount++
@@ -145,31 +148,51 @@ func sendBets(conn net.Conn, seq_num *int, inputFile *os.File, agencyId string) 
 			continue
 		}
 
-		logger.Info(mainAction, logger.Success, "Sending REQUEST: cant-bytes: ", len(line))
+		batch = append(batch, bet)
 
-		sent_succesfully := false
-		
-		for retries := 0; retries < RETRY_MAX && !sent_succesfully; retries++ {
-			if err := protocol.SendRequest(conn, *seq_num, bet.ToBytes()); err != nil {
-				logger.Error("send-request", logger.Fail, "agency-id", agencyId)
-				return err
-			}
-
-			ack, err := protocol.ReceiveFrom(conn)
-			if err != nil {
-				logger.Error("receive-ack", logger.Fail, "agency-id", agencyId)
-				return err
-			}
-			sent_succesfully = *seq_num == ack.SequenceNumber()
-		}
-		if !sent_succesfully {
-			return fmt.Errorf("no se pudo enviar el paquete después de %d reintentos", RETRY_MAX)
-		}
-		*seq_num = *seq_num + 1
+        if len(batch) == batchSize {
+            if err := sendBatch(conn, seq_num, batch); err != nil {
+                return err
+            }
+            batch = nil
+        }
 	}
 
-	logger.Info(mainAction, logger.Success, "agency-id", agencyId, "lines-read", lineCount)
-	return nil
+    if len(batch) > 0 {
+        if err := sendBatch(conn, seq_num, batch); err != nil {
+            return err
+        }
+    }
+
+    if err := scanner.Err(); err != nil {
+        logger.Error("scan-input-file", logger.Fail, "agency-id", agencyId)
+        return err
+    }
+
+    logger.Info("send-bets", logger.Success, "agency-id", agencyId, "lines-read", lineCount)
+    return nil
+}
+
+func sendBatch(conn net.Conn, seq_num *int, bets []*protocol.Bet) error {
+    payload, err := protocol.SerializeBatch(bets)
+    if err != nil {
+        return err
+    }
+    if err := protocol.SendRequest(conn, *seq_num, payload); err != nil {
+        return err
+    }
+    ack, err := protocol.ReceiveFrom(conn)
+    if err != nil {
+        return err
+    }
+    if ack.SequenceNumber() != *seq_num {
+        return fmt.Errorf("ACK incorrecto")
+    }
+    if string(ack.Payload()) == "ERROR" {
+        return fmt.Errorf("servidor rechazó el lote")
+    }
+    *seq_num++
+    return nil
 }
 
 func sendEOF(conn net.Conn, seq_num *int, agencyId string) error {

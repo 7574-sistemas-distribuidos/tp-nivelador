@@ -2,8 +2,7 @@ import socket
 import logger 
 import lottery
 from protocol import (PacketType, receive_from, send_response, send_ack,
-                      send_eof, send_init, send_request,
-                      bytes_to_bet, parse_csv_line_from_bet)
+                      send_eof, deserialize_batch)
 
 LENGTH_MESSAGE_SIZE = 4
 BETS_FILE = "bets.csv"
@@ -72,15 +71,20 @@ class Server:
     def _receive_bets(self, client_socket, packet, bets, seq_num):
         action = "receive-bets"
         try:
-            bet = bytes_to_bet(packet.payload())
+            bets_list = deserialize_batch(packet.payload())
         except Exception as e:
-            logger.error("parse-error", str(e))
+            logger.error("batch-deserialize-error", str(e))
             send_ack(client_socket, packet.sequence_number(), b'ERROR')
-            raise
+            return seq_num, bets  
+        try:
+            bets.store_bets(bets_list) 
+        except Exception as e:
+            logger.error("store-bets-error", str(e))
+            send_ack(client_socket, packet.sequence_number(), b'ERROR')
+            return seq_num, bets
 
-        bets.store_bets([bet])
         send_ack(client_socket, packet.sequence_number(), b'OK')
-        logger.info(action, logger.LogResult.in_progress, "bet-stored", "seq", packet.sequence_number())
+        logger.info(action, logger.LogResult.in_progress, "batch-stored", "count", len(bets_list), "seq", packet.sequence_number())
         seq_num = packet.sequence_number() + 1
         return seq_num, bets
 

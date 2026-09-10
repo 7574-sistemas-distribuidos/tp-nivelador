@@ -25,6 +25,7 @@ services:
       - AGENCY_ID=0
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - BATCH_SIZE=500
   client_1:
     build:
       context: ./services/client
@@ -39,6 +40,7 @@ services:
       - AGENCY_ID=1
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - BATCH_SIZE=500
   client_2:
     build:
       context: ./services/client
@@ -53,6 +55,7 @@ services:
       - AGENCY_ID=2
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - BATCH_SIZE=500
   client_3:
     build:
       context: ./services/client
@@ -67,6 +70,7 @@ services:
       - AGENCY_ID=3
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - BATCH_SIZE=500
   client_4:
     build:
       context: ./services/client
@@ -81,6 +85,7 @@ services:
       - AGENCY_ID=4
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - BATCH_SIZE=500
   client_5:
     build:
       context: ./services/client
@@ -95,3 +100,4 @@ services:
       - AGENCY_ID=5
       - SERVER_HOST=server
       - SERVER_PORT=5678
+      - BATCH_SIZE=500

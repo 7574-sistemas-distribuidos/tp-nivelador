@@ -104,3 +104,9 @@ func ParseBetFromCSVLine(line string, agencyId string) (*Bet, error) {
 func ParseCSVLineFromBet(bet Bet) (string, error) {
     return fmt.Sprintf("%s,%s,%d,%s,%d", bet.firstName, bet.lastName, bet.document, bet.birthdate, bet.number), nil
 }
+
+func StringToInt(str string) (int, error) {
+	var num int
+	_, err := fmt.Sscanf(str, "%d", &num) 
+	return num, err
+}
