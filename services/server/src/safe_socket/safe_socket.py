@@ -22,7 +22,5 @@ def send_all(socket: socket.socket, bytes):
         n = socket.send(bytes[bytes_sent:])
         if n == -1:
             raise Exception("Socket error during write operation")
-        if n == 0:
-            break
         bytes_sent += n
     return bytes_sent

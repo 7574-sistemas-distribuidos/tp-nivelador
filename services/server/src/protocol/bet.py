@@ -1,5 +1,4 @@
 from lottery.bet import Bet
-import logger
 
 
 def bet_from_bytes(data: bytes,agency_id) -> Bet:
@@ -18,7 +17,7 @@ def bet_from_bytes(data: bytes,agency_id) -> Bet:
     offset += 1
     birthdate = data[offset:offset + birthdat_length].decode('utf-8')
     offset += birthdat_length
-    number = int.from_bytes(data[offset:offset + 2], byteorder='big')
+    number = int.from_bytes(data[offset:offset + 4], byteorder='big')
 
     return Bet(
         agency_id=agency_id,
@@ -31,7 +30,6 @@ def bet_from_bytes(data: bytes,agency_id) -> Bet:
 
 
 def bet_to_bytes(bet: Bet) -> bytes:
-    logger.info("lottery", logger.LogResult.success, "bet-to-bytes", bet.__dict__)
     first_name_bytes = bet.first_name.encode('utf-8')
     last_name_bytes = bet.last_name.encode('utf-8')
     birthdate_bytes = str(bet.birthdate).encode('utf-8')
@@ -50,12 +48,12 @@ def bet_to_bytes(bet: Bet) -> bytes:
     data.append(len(birthdate_bytes))
     data.extend(birthdate_bytes)
     
-    data.extend(int(bet.number).to_bytes(2, byteorder='big'))
+    data.extend(int(bet.number).to_bytes(4, byteorder='big'))
 
     final_data = bytearray()
     total_length = len(data)
     final_data.extend(total_length.to_bytes(4, byteorder='big'))
     final_data.extend(data)
     
-    logger.info("lottery", logger.LogResult.success, "bet-to-bytes-final", final_data)
+
     return bytes(final_data)  

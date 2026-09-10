@@ -40,7 +40,6 @@ func (br *BatchReader) ReadBatch(batchSize int) ([][]string, bool, error) {
 	return records, true, nil
 }
 
-// Close libera el descriptor del archivo.
 func (br *BatchReader) Close() error {
 	return br.file.Close()
 }

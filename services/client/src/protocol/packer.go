@@ -28,7 +28,6 @@ func GenerateBetPacket(bets []entities.Bet, agencyId string) ([]byte, error) {
 		}
 		betsSerialized = append(betsSerialized, betSerialized...)
 	}
-	logger.Info("GenerateBetPacket", logger.Success, " Successfully generated Bet packet with ", betsAmount, " bets for agency ", agencyId)
 
 	payloadLength := len(betsSerialized)
 	agencyIdBytes := uint8(agencyIdParsed)
@@ -59,7 +58,5 @@ func GenerateAllBetsSentPacket(agencyId string) ([]byte, error) {
 	header := NewHeader(agencyIdBytes, messageType)
 	allBetsSentSerialized := make([]byte, 0, header.Size())
 	allBetsSentSerialized = append(allBetsSentSerialized, header.Serialize()...)
-	logger.Info("GenerateAllBetsSentPacket", logger.Success, " Successfully generated All Bets Sent packet for agency ", agencyId)
-
 	return allBetsSentSerialized, nil
 }

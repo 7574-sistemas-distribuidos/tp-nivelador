@@ -14,7 +14,7 @@ type Bet struct {
 	LastName  string
 	Id        uint32
 	BirthDate string
-	Numbers   uint16
+	Numbers   uint32
 }
 
 func NewBetFromRecord(record []string) (Bet, error) {
@@ -29,20 +29,18 @@ func NewBetFromRecord(record []string) (Bet, error) {
 		return Bet{}, err
 	}
 
-	numbersParsed, err := strconv.ParseUint(record[4], 10, 16)
+	numbersParsed, err := strconv.ParseUint(record[4], 10, 32)
 	if err != nil {
 		logger.Error("NewBetFromRecord", logger.Fail, " Failed to parse Numbers: ", err)
 		return Bet{}, err
 	}
-
-	logger.Info("NewBetFromRecord", logger.Success, " Successfully created Bet struct from record")
 
 	return Bet{
 		FirstName: record[0],
 		LastName:  record[1],
 		Id:        uint32(idParsed),
 		BirthDate: record[3],
-		Numbers:   uint16(numbersParsed),
+		Numbers:   uint32(numbersParsed),
 	}, nil
 }
 
@@ -65,13 +63,12 @@ func SerializeBet(p Bet) ([]byte, error) {
 	payload = append(payload, uint8(len(p.BirthDate)))
 	payload = append(payload, p.BirthDate...)
 
-	payload = binary.BigEndian.AppendUint16(payload, p.Numbers)
+	payload = binary.BigEndian.AppendUint32(payload, p.Numbers)
 
 	var finalBuffer []byte
 	totalLength := uint32(len(payload))
 	finalBuffer = binary.BigEndian.AppendUint32(finalBuffer, totalLength)
 	finalBuffer = append(finalBuffer, payload...)
-	logger.Info("SerializeBet", logger.Success, " Successfully serialized Bet struct")
 
 	return finalBuffer, nil
 }
@@ -111,7 +108,7 @@ func DeserializeBet(data []byte) (Bet, error) {
 	birthDate := string(data[offset : offset+birthDateLength])
 	offset += birthDateLength
 
-	numbers := binary.BigEndian.Uint16(data[offset : offset+2])
+	numbers := binary.BigEndian.Uint32(data[offset : offset+4])
 
 	logger.Info("DeserializeBet", logger.Success, " Successfully deserialized Bet struct from data")
 
@@ -144,7 +141,6 @@ func BetsFromRecords(records [][]string) ([]Bet, error) {
 		}
 		bets = append(bets, bet)
 	}
-	logger.Info("BetsFromRecords", logger.Success, " Successfully created Bet structs from records")
 	return bets, nil
 }
 
@@ -153,6 +149,6 @@ func BetSize() int {
 	// 1 byte for LastName length + LastName bytes
 	// 4 bytes for Id
 	// 1 byte for BirthDate length + BirthDate bytes
-	// 2 bytes for Numbers
-	return 1 + 255 + 1 + 255 + 4 + 1 + 10 + 2 // Assuming max lengths for FirstName, LastName, and BirthDate
+	// 4 bytes for Numbers
+	return 1 + 255 + 1 + 255 + 4 + 1 + 10 + 4 // Assuming max lengths for FirstName, LastName, and BirthDate
 }

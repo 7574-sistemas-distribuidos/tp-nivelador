@@ -18,9 +18,6 @@ def generate_compose(filename, count):
                     "SERVER_PORT=5678",
                     "STORAGE_DIR=/app/storage"
                 ],
-                "volumes": [
-                    "./output/server:/app/storage:rw"
-                ]
             }
         },
     }
