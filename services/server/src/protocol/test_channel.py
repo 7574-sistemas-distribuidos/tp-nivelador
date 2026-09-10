@@ -85,10 +85,10 @@ class MessageChannelReceiveTests(unittest.TestCase):
 
 
     FILLED_BET_TYPE = b"\x02"
-    THIRTY_EIGHT_BYTE_LENGTH = b"\x00\x26"
+    FORTY_BYTE_LENGTH = b"\x00\x28"
     BET_RECORD_PAYLOAD = (
         b"\x02\x0d\x03\x53"
-        + b"\x04\x09"
+        + b"\x00\x00\x04\x09"
         + b"2001-08-29"
         + b"\x0e"
         + b"Tiago Nicol\xc3\xa1s"
@@ -96,7 +96,7 @@ class MessageChannelReceiveTests(unittest.TestCase):
         + b"Rivera"
     )
 
-    FILLED_BET_FRAME = FILLED_BET_TYPE + THIRTY_EIGHT_BYTE_LENGTH + BET_RECORD_PAYLOAD
+    FILLED_BET_FRAME = FILLED_BET_TYPE + FORTY_BYTE_LENGTH + BET_RECORD_PAYLOAD
 
     CONNECTION_AGENCY_ID = 1
 
@@ -125,9 +125,9 @@ class MessageChannelSendTests(unittest.TestCase):
 
     BET_WINNER_FRAME = (
         b"\x05"
-        + b"\x00\x26"
+        + b"\x00\x28"
         + b"\x02\x0d\x03\x53"
-        + b"\x04\x09"
+        + b"\x00\x00\x04\x09"
         + b"2001-08-29"
         + b"\x0e"
         + b"Tiago Nicol\xc3\xa1s"

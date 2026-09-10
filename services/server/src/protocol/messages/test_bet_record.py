@@ -7,7 +7,7 @@ from protocol.errors import ProtocolError
 class BetRecordTests(unittest.TestCase):
     VALID_RECORD_BYTES = (
         b"\x02\x0d\x03\x53"
-        + b"\x04\x09"
+        + b"\x00\x00\x04\x09"
         + b"2001-08-29"
         + b"\x0e"
         + b"Tiago Nicol\xc3\xa1s"
@@ -23,9 +23,9 @@ class BetRecordTests(unittest.TestCase):
 
     def test_it_rejects_a_first_name_length_that_overruns_the_record(self):
         overrun = (
-            self.VALID_RECORD_BYTES[:16]
+            self.VALID_RECORD_BYTES[:18]
             + bytes([200])
-            + self.VALID_RECORD_BYTES[17:]
+            + self.VALID_RECORD_BYTES[19:]
         )
 
         with self.assertRaises(ProtocolError):
@@ -40,7 +40,7 @@ class BetRecordTests(unittest.TestCase):
     def test_it_rejects_a_name_that_is_not_valid_utf_8(self):
         lone_continuation_byte = b"\xff\xfe"
         invalid_utf_8 = (
-            self.VALID_RECORD_BYTES[:16]
+            self.VALID_RECORD_BYTES[:18]
             + bytes([len(lone_continuation_byte)])
             + lone_continuation_byte
             + b"\x06"

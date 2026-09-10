@@ -33,7 +33,7 @@ class FilledBetsMessageTests(unittest.TestCase):
     CONNECTION_AGENCY_ID = 1
 
     DOCUMENT_34407251 = b"\x02\x0d\x03\x53"
-    NUMBER_1033 = b"\x04\x09"
+    NUMBER_1033 = b"\x00\x00\x04\x09"
     BIRTHDATE_2001_08_29 = b"2001-08-29"
     FIRST_NAME_LENGTH_14 = b"\x0e"
     FIRST_NAME_TIAGO_NICOLAS = b"Tiago Nicol\xc3\xa1s"
@@ -67,7 +67,7 @@ class FilledBetsMessageTests(unittest.TestCase):
 
     SECOND_BET_RECORD_PAYLOAD = (
         b"\x00\x0f\x12\x06"
-        + b"\x1d\x9a"
+        + b"\x00\x00\x1d\x9a"
         + b"1999-03-17"
         + b"\x17"
         + b"Milagros De Los Angeles"

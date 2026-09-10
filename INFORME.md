@@ -41,6 +41,18 @@ Imponer la restricción / cota de 124 no parece tener mucho sentido para este co
 
 Elijo validar entonces el payload serializado real contra el límite real antes de escribir algo, de modo que un batch que exceda el límite falla de forma explícita.
 
+Actualización:
+
+Efectivamente tuve los siguientes errores que me hicieron notar el error antes que un ctaseo / truncamiento silencioso:
+
+client_0  | 2026/09/10 13:46:13 ERROR action=send-bets result=fail bet-line=65537 err="number 65536 does not fit in 2 bytes"
+
+client_0  | 2026/09/10 13:46:13 ERROR action=client-run result=fail err="number 65536 does not fit in 2 bytes"
+
+
+El registro de apuesta serializaba number en 2 bytes, es decir un rango de 0 a 65.535. Los archivos de input provistos en base a lo explicado anteriormente no superaban esa cantidad.
+La prueba de memoria usa  el índice de la fila como número de apuesta asi que ese valor ya no entra en el campo. Por eso voy a aumentar a 2 bytes el numero. Con ese cambio, los 18 bytes fijos del cálculo de batching de la sección anterior pasan a ser 20.
+
 ---
 
 Comentar el agregado de mensajes

@@ -4,7 +4,7 @@ from protocol.errors import ProtocolError
 
 class BetRecord:
     _DOCUMENT_BYTES = 4
-    _NUMBER_BYTES = 2
+    _NUMBER_BYTES = 4
     _BIRTHDATE_BYTES = 10
     _NAME_LENGTH_BYTES = 1
     _FIXED_PREFIX_BYTES = _DOCUMENT_BYTES + _NUMBER_BYTES + _BIRTHDATE_BYTES

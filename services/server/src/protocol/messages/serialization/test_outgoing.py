@@ -13,7 +13,7 @@ class BetWinnerMessageTests(unittest.TestCase):
     BET_WINNER_TYPE = b"\x05"
 
     DOCUMENT_34407251 = b"\x02\x0d\x03\x53"
-    NUMBER_1033 = b"\x04\x09"
+    NUMBER_1033 = b"\x00\x00\x04\x09"
     BIRTHDATE_2001_08_29 = b"2001-08-29"
     FIRST_NAME_LENGTH_14 = b"\x0e"
     FIRST_NAME_TIAGO_NICOLAS = b"Tiago Nicol\xc3\xa1s"

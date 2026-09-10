@@ -11,7 +11,7 @@ import (
 
 const (
 	documentBytes   = 4
-	numberBytes     = 2
+	numberBytes     = 4
 	birthdateBytes  = 10
 	nameLengthBytes = 1
 
@@ -23,7 +23,7 @@ func betToBytes(bet business.Bet) ([]byte, error) {
 	if int64(bet.Document) > math.MaxUint32 {
 		return nil, fmt.Errorf("document %d does not fit in %d bytes", bet.Document, documentBytes)
 	}
-	if bet.Number > math.MaxUint16 {
+	if int64(bet.Number) > math.MaxUint32 {
 		return nil, fmt.Errorf("number %d does not fit in %d bytes", bet.Number, numberBytes)
 	}
 	if len(bet.Birthdate) != birthdateBytes {
@@ -49,7 +49,7 @@ func betToBytes(bet business.Bet) ([]byte, error) {
 
 	recordBytes := make([]byte, 0, totalRecordBytes)
 	recordBytes = binary.BigEndian.AppendUint32(recordBytes, uint32(bet.Document))
-	recordBytes = binary.BigEndian.AppendUint16(recordBytes, uint16(bet.Number))
+	recordBytes = binary.BigEndian.AppendUint32(recordBytes, uint32(bet.Number))
 	recordBytes = append(recordBytes, bet.Birthdate...)
 	recordBytes = append(recordBytes, byte(len(bet.FirstName)))
 	recordBytes = append(recordBytes, bet.FirstName...)
@@ -71,7 +71,7 @@ func betFromBytes(payload []byte) (business.Bet, error) {
 	document := binary.BigEndian.Uint32(payload[offset : offset+documentBytes])
 	offset += documentBytes
 
-	number := binary.BigEndian.Uint16(payload[offset : offset+numberBytes])
+	number := binary.BigEndian.Uint32(payload[offset : offset+numberBytes])
 	offset += numberBytes
 
 	birthdate, err := decodedText(payload[offset:offset+birthdateBytes], "birthdate")
