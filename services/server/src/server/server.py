@@ -1,11 +1,11 @@
+import os
 import socket
 import threading
 import logger 
 import lottery
 from protocol import (PacketType, receive_from, send_response, send_ack,
                       send_eof, deserialize_batch)
-
-LENGTH_MESSAGE_SIZE = 4
+ 
 BETS_FILE = "bets.csv"
 INIT_SEQ_NUM = 0
 
@@ -16,7 +16,7 @@ class Server:
         open(BETS_FILE, 'w').close()
         self.lottery = lottery.Lottery(BETS_FILE)
 
-        self.quorum = int(3)
+        self.quorum = int(os.getenv("AGENCY_QUORUM_MIN", "1"))
         self.lock = threading.Lock()
         self.winners = None
 

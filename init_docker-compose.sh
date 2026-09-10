@@ -6,6 +6,7 @@ CLIENTES="$1"
 SERVER_PORT=5678
 FILE_NAME="docker-compose.yaml"
 BATCH_SIZE=500
+AGENCY_QUORUM_MIN=3
 
 if [ -z "$CLIENTES" ] || [ "$CLIENTES" -le 0 ]; then
   echo "No client specified. Please provide the amount of clients as arguments."
@@ -25,6 +26,7 @@ services:
       - PYTHONUNBUFFERED=1
       - SERVER_HOST=server
       - SERVER_PORT=$SERVER_PORT
+      - AGENCY_QUORUM_MIN=$AGENCY_QUORUM_MIN
 
 EOF
 
