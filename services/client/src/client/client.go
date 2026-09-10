@@ -2,19 +2,18 @@ package client
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
-	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/safe_socket"
+	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
 const CONNECTION_ATTEMPS_DELAY_MS = 200
-
-const CLIENT_RECEIVE_BUFFER_SIZE = 1024
 
 type ClientConfig struct {
 	ServerHost string
@@ -79,9 +78,6 @@ func (client *Client) Run() error {
 	}
 	defer outputFile.Close()
 
-	outputWriter := bufio.NewWriter(outputFile)
-	defer outputWriter.Flush()
-
 	logger.Info(mainAction, logger.InProgress, "agency-id", client.config.AgencyId)
 
 	scanner := bufio.NewScanner(inputFile)
@@ -93,20 +89,20 @@ func (client *Client) Run() error {
 		}
 		lineCount++
 
-		if err := safe_socket.SendAll(client.conn, []byte(line)); err != nil {
-			logger.Error("send-message", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
+		payload := []byte(client.config.AgencyId + "," + line)
+		if err := protocol.SendMsg(client.conn, protocol.MsgBet, payload); err != nil {
+			logger.Error("send-bet", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
 			return err
 		}
 
-		responseBuffer, err := safe_socket.RecvAll(client.conn, CLIENT_RECEIVE_BUFFER_SIZE)
+		msgType, _, err := protocol.RecvMsg(client.conn)
 		if err != nil {
-			logger.Error("recv-response", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
+			logger.Error("recv-ack", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
 			return err
 		}
-
-		if _, err := outputWriter.WriteString(string(responseBuffer) + "\n"); err != nil {
-			logger.Error("write-output", logger.Fail, "agency-id", client.config.AgencyId, "line", lineCount, "err", err)
-			return err
+		if msgType != protocol.MsgAck {
+			logger.Error("check-ack", logger.Fail, "agency-id", client.config.AgencyId, "expected", protocol.MsgAck, "got", msgType)
+			return fmt.Errorf("unexpected message type: %d", msgType)
 		}
 	}
 
@@ -115,9 +111,29 @@ func (client *Client) Run() error {
 		return err
 	}
 
-	if err := outputWriter.Flush(); err != nil {
-		logger.Error("flush-output", logger.Fail, "agency-id", client.config.AgencyId, "err", err)
+	// Notificar fin de envío de apuestas y solicitar ganadores
+	if err := protocol.SendMsg(client.conn, protocol.MsgEndBets, []byte(client.config.AgencyId)); err != nil {
+		logger.Error("send-end-bets", logger.Fail, "agency-id", client.config.AgencyId, "err", err)
 		return err
+	}
+
+	// Recibir listado de ganadores
+	msgType, winnersPayload, err := protocol.RecvMsg(client.conn)
+	if err != nil {
+		logger.Error("recv-winners", logger.Fail, "agency-id", client.config.AgencyId, "err", err)
+		return err
+	}
+	if msgType != protocol.MsgWinners {
+		logger.Error("check-winners", logger.Fail, "agency-id", client.config.AgencyId, "expected", protocol.MsgWinners, "got", msgType)
+		return fmt.Errorf("unexpected message type: %d", msgType)
+	}
+
+	// Persistir los ganadores en el archivo de salida
+	if len(winnersPayload) > 0 {
+		if _, err := outputFile.Write(winnersPayload); err != nil {
+			logger.Error("write-output", logger.Fail, "agency-id", client.config.AgencyId, "err", err)
+			return err
+		}
 	}
 
 	logger.Info(mainAction, logger.Success, "agency-id", client.config.AgencyId, "total-bets", lineCount)
