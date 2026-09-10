@@ -1,3 +1,4 @@
+import signal
 import socket
 import threading
 
@@ -34,6 +35,9 @@ class Server:
         self._bets_file_lock = threading.Lock()
         self._finished_agencies = 0
         self._lottery_draw = threading.Condition()
+        self._client_sockets = []
+        self._client_sockets_lock = threading.Lock()
+        self._sigterm_arrived = False
 
     def _handle_client(self, client_socket):
         action = "handle-client"
@@ -79,7 +83,12 @@ class Server:
                 self._lottery_draw.notify_all()
                 self._lottery_draw.wait_for(
                     lambda: self._finished_agencies >= self._agency_quorum_min
+                    or self._has_sigterm_signal_arrived()
                 )
+
+            if self._has_sigterm_signal_arrived():
+                logger.info(action, logger.LogResult.success, "draw-skipped", agency_id)
+                return
 
             self._compute_loterry_draw_from_bets(message_channel, agency_id)
 
@@ -99,22 +108,72 @@ class Server:
         except Exception as e:
             logger.error(action, logger.LogResult.fail, "err", e)
             raise
+        finally:
+            self._unregister_client_socket(client_socket)
+
+    def _register_client_socket(self, client_socket):
+        with self._client_sockets_lock:
+            self._client_sockets.append(client_socket)
+
+    def _unregister_client_socket(self, client_socket):
+        with self._client_sockets_lock:
+            if client_socket in self._client_sockets:
+                self._client_sockets.remove(client_socket)
+
+    def _has_sigterm_signal_arrived(self):
+        return self._sigterm_arrived
+
+    def _stop_agency_sessions(self):
+        action = "stop-agency-sessions"
+        logger.info(action, logger.LogResult.in_progress)
+
+        with self._lottery_draw:
+            self._lottery_draw.notify_all()
+
+        with self._client_sockets_lock:
+            client_sockets = list(self._client_sockets)
+        for client_socket in client_sockets:
+            try:
+                client_socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
+        for client_thread in self._threads:
+            client_thread.join()
+
+        logger.info(action, logger.LogResult.success, "sessions", len(self._threads))
 
     def run(self):
         accept_action = "accept-connection"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.bind((self._server_host, self._server_port))
             server_socket.listen()
-            while True:
+
+            def request_shutdown(_signum, _frame):
+                self._sigterm_arrived = True
+                try:
+                    server_socket.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+
+            signal.signal(signal.SIGTERM, request_shutdown)
+
+            while not self._has_sigterm_signal_arrived():
                 try:
                     logger.info(accept_action, logger.LogResult.in_progress)
                     client_socket, _ = server_socket.accept()
-                    client_thread = threading.Thread(
-                        target=self._run_session, args=(client_socket,)
-                    )
-                    self._threads.append(client_thread)
-                    client_thread.start()
                 except Exception as e:
+                    if self._has_sigterm_signal_arrived():
+                        break
                     logger.error(accept_action, logger.LogResult.fail)
                     raise e
+
+                self._register_client_socket(client_socket)
+                client_thread = threading.Thread(
+                    target=self._run_session, args=(client_socket,)
+                )
+                self._threads.append(client_thread)
+                client_thread.start()
                 logger.info(accept_action, logger.LogResult.success)
+
+            self._stop_agency_sessions()
