@@ -11,6 +11,7 @@ import (
 
 	"bufio"
 	"os"
+	"path/filepath"
 
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
@@ -204,6 +205,11 @@ func (client *Client) SendBatch(payload []byte) error {
 }
 
 func (client *Client) receiveWinners() error {
+	if err := os.MkdirAll(filepath.Dir(client.config.OutputFile), 0o755); err != nil {
+		logger.Error("create-output-dir", logger.Fail)
+		return err
+	}
+
 	outputFile, err := os.Create(client.config.OutputFile)
 	if err != nil {
 		logger.Error("create-output-file", logger.Fail)
