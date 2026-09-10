@@ -1,22 +1,37 @@
 package safe_socket
 
 import "io"
+import "errors"
 
-//TODO: Complete with a short-read/short-write tolerant implementation
+// Short-read/short-write tolerant implementation
 
 func SendAll(socket io.Writer, bytes []byte) error {
-	_, err := socket.Write(bytes)
-	if err != nil {
-		return err
+    total_bytes_sent := 0
+	for total_bytes_sent < len(bytes) {
+		n, err := socket.Write(bytes[total_bytes_sent:])
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return errors.New("Error de conexion dureante el envio de datos")
+		}
+		total_bytes_sent += n
 	}
 	return nil
 }
 
 func RecvAll(socket io.Reader, size int) ([]byte, error) {
-	buff := make([]byte, size)
-	n, err := socket.Read(buff)
-	if err != nil {
-		return nil, err
+	buffer := make([]byte, size)
+	total_bytes_received := 0
+	for total_bytes_received < size {
+		n, err := socket.Read(buffer[total_bytes_received:])
+		if err != nil {
+			return nil, err
+		}
+		if n == 0 {
+			return nil, errors.New("Error de conexion durante la recepcion de datos")
+		}
+		total_bytes_received += n
 	}
-	return buff[:n], nil
+	return buffer, nil
 }
