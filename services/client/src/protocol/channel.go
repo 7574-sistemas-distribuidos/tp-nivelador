@@ -21,6 +21,8 @@ const (
 	startBetWinnersSendingType    = 0x04
 	betWinnerType                 = 0x05
 	finalizeBetWinnersSendingType = 0x06
+	processedBetsBatchType        = 0x07
+	rejectedBetsBatchType         = 0x08
 )
 
 type MessageChannel struct {
@@ -76,6 +78,10 @@ func incomingMessageFrom(messageType byte, payloadBytes []byte) (IncomingMessage
 		return BetWinnerMessageFrom(payloadBytes)
 	case finalizeBetWinnersSendingType:
 		return FinalizeBetWinnersSendingMessageFrom(payloadBytes)
+	case processedBetsBatchType:
+		return ProcessedBetsBatchMessageFrom(payloadBytes)
+	case rejectedBetsBatchType:
+		return RejectedBetsBatchMessageFrom(payloadBytes)
 	default:
 		return nil, fmt.Errorf("unknown message type 0x%02x", messageType)
 	}

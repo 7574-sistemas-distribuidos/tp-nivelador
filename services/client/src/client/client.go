@@ -116,20 +116,7 @@ func (client *Client) sendBets(channel *protocol.MessageChannel, inputFile *os.F
 	for scanner.Scan() {
 		betBatch = append(betBatch, scanner.Text())
 		if len(betBatch) == batchSize {
-			bets, err := business.BetsFromBatch(betBatch)
-			if err != nil {
-				logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
-				return err
-			}
-
-			filledBet, err := protocol.NewFilledBetsMessageFrom(bets)
-			if err != nil {
-				logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
-				return err
-			}
-
-			if err := channel.Send(filledBet); err != nil {
-				logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+			if err := client.sendBatch(channel, betBatch, betsSent+1); err != nil {
 				return err
 			}
 			betsSent += len(betBatch)
@@ -142,20 +129,7 @@ func (client *Client) sendBets(channel *protocol.MessageChannel, inputFile *os.F
 	}
 
 	if len(betBatch) > 0 {
-		bets, err := business.BetsFromBatch(betBatch)
-		if err != nil {
-			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
-			return err
-		}
-
-		filledBet, err := protocol.NewFilledBetsMessageFrom(bets)
-		if err != nil {
-			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
-			return err
-		}
-
-		if err := channel.Send(filledBet); err != nil {
-			logger.Error(action, logger.Fail, "bet-line", betsSent+1, "err", err)
+		if err := client.sendBatch(channel, betBatch, betsSent+1); err != nil {
 			return err
 		}
 		betsSent += len(betBatch)
@@ -168,6 +142,59 @@ func (client *Client) sendBets(channel *protocol.MessageChannel, inputFile *os.F
 
 	logger.Info(action, logger.Success, "agency-id", client.config.AgencyId, "bets-sent", betsSent)
 	return nil
+}
+
+func (client *Client) sendBatch(channel *protocol.MessageChannel, lines []string, firstLine int) error {
+	const action = "send-bets"
+
+	bets, err := business.BetsFromBatch(lines)
+	if err != nil {
+		logger.Error(action, logger.Fail, "bet-line", firstLine, "err", err)
+		return err
+	}
+
+	filledBets, err := protocol.NewFilledBetsMessageFrom(bets)
+	if err != nil {
+		logger.Error(action, logger.Fail, "bet-line", firstLine, "err", err)
+		return err
+	}
+
+	if err := channel.Send(filledBets); err != nil {
+		logger.Error(action, logger.Fail, "bet-line", firstLine, "err", err)
+		return err
+	}
+
+	return client.awaitBatchProcessedMessage(channel, firstLine, len(bets))
+}
+
+func (client *Client) awaitBatchProcessedMessage(
+	channel *protocol.MessageChannel, firstLine int, betsInBatch int,
+) error {
+	const action = "send-bets"
+
+	message, err := channel.Receive()
+	if err != nil {
+		logger.Error(action, logger.Fail, "bet-line", firstLine, "err", err)
+		return err
+	}
+
+	switch receivedMessage := message.(type) {
+	case *protocol.ProcessedBetsBatchMessage:
+		return nil
+	case *protocol.RejectedBetsBatchMessage:
+		err := fmt.Errorf(
+			"the lottery rejected the batch of %d bets starting at line %d",
+			betsInBatch, firstLine,
+		)
+		logger.Error(action, logger.Fail, "bet-line", firstLine, "err", err)
+		return err
+	default:
+		err := fmt.Errorf(
+			"expected a processed_bets_batch or a rejected_bets_batch, got %T", receivedMessage,
+		)
+		logger.Error(action, logger.Fail, "bet-line", firstLine, "err", err)
+		return err
+	}
 }
 
 func (client *Client) receiveBetWinners(channel *protocol.MessageChannel, outputFile *os.File) error {

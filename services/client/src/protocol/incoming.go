@@ -13,6 +13,8 @@ type IncomingMessage interface {
 func (*StartBetWinnersSendingMessage) isIncomingMessage()    {}
 func (*BetWinnerMessage) isIncomingMessage()                 {}
 func (*FinalizeBetWinnersSendingMessage) isIncomingMessage() {}
+func (*ProcessedBetsBatchMessage) isIncomingMessage()        {}
+func (*RejectedBetsBatchMessage) isIncomingMessage()         {}
 
 type StartBetWinnersSendingMessage struct {
 }
@@ -48,4 +50,24 @@ func FinalizeBetWinnersSendingMessageFrom(payloadBytes []byte) (*FinalizeBetWinn
 		return nil, fmt.Errorf("finalize_bet_winners_sending carries no payload, got %d bytes", len(payloadBytes))
 	}
 	return &FinalizeBetWinnersSendingMessage{}, nil
+}
+
+type ProcessedBetsBatchMessage struct {
+}
+
+func ProcessedBetsBatchMessageFrom(payloadBytes []byte) (*ProcessedBetsBatchMessage, error) {
+	if len(payloadBytes) != 0 {
+		return nil, fmt.Errorf("processed_bets_batch carries no payload, got %d bytes", len(payloadBytes))
+	}
+	return &ProcessedBetsBatchMessage{}, nil
+}
+
+type RejectedBetsBatchMessage struct {
+}
+
+func RejectedBetsBatchMessageFrom(payloadBytes []byte) (*RejectedBetsBatchMessage, error) {
+	if len(payloadBytes) != 0 {
+		return nil, fmt.Errorf("rejected_bets_batch carries no payload, got %d bytes", len(payloadBytes))
+	}
+	return &RejectedBetsBatchMessage{}, nil
 }
