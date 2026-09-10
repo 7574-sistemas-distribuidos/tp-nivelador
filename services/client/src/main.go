@@ -11,6 +11,8 @@ import (
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 )
 
+// Carga la configuracion del cliente desde variables
+// de entorno y devuelve un objeto ClientConfig
 func loadConfig() (client.ClientConfig, error) {
 	agencyId := os.Getenv("AGENCY_ID")
 	if agencyId == "" {
@@ -52,23 +54,27 @@ func loadConfig() (client.ClientConfig, error) {
 	}, nil
 }
 
+// ctx se cancela al recibir SIGTERM y se propaga a las llamadas para
+// cortar al instante la ejecucion del cliente
+// defer cancel evita que la goroutine que escucha el canal en Run
+// quede bloqueada para siempre si el cliente termina normalmente
 func run() int {
-	var ctx context.Context
-	ctx, cancel := context.WithCancel(context.Background())
-
-	defer cancel()
-
-	sigChan := make(chan os.Signal, 1)
-
-	signal.Notify(sigChan, syscall.SIGTERM)
-
-	go func() { <-sigChan; logger.Info("sigterm", logger.InProgress); cancel() }()
-
 	config, err := loadConfig()
 	if err != nil {
 		logger.Error("load-config", logger.Fail, "err", err)
 		return 1
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGTERM)
+
+	go func() {
+		<-sigChannel
+		logger.Info("sigterm", logger.InProgress)
+		cancel()
+	}()
 
 	client, err := client.NewClient(ctx, config)
 	if err != nil {

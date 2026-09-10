@@ -39,6 +39,7 @@ type Client struct {
 	ctx       context.Context
 }
 
+// el limite de agencyId esta relacionado con el protocolo
 func NewClient(ctx context.Context, config ClientConfig) (*Client, error) {
 
 	agencyId, err := strconv.Atoi(config.AgencyId)
@@ -68,6 +69,8 @@ func NewClient(ctx context.Context, config ClientConfig) (*Client, error) {
 	return &Client{conn: conn, config: config, agency: byte(agencyId), batchSize: batchSize, ctx: ctx}, nil
 }
 
+// el select contra el ctx logra que no se tenga que esperar el delay completo
+// si llega SIGTERM mientras se espera
 func connectToServer(ctx context.Context, host, port string) (net.Conn, error) {
 	const action = "connect-to-server"
 	var err error
@@ -93,6 +96,12 @@ func connectToServer(ctx context.Context, host, port string) (net.Conn, error) {
 	return conn, err
 }
 
+// para lograr el cierre durante la comunicacion, que puede pasar
+// durante un read o write, se cierra la conexion en el defer de
+// Run y en la goroutine que espera a que se cancele el contexto
+//
+// el orden sendBets -> sendEnd -> receiveWinners le avisa
+// al server cuando se enviaron todas las apuestas
 func (client *Client) Run() error {
 	defer client.conn.Close()
 
@@ -120,6 +129,9 @@ func (client *Client) Run() error {
 	return nil
 }
 
+// encodedeNewBet se reutiliza entre iteraciones
+// en las iteraciones se acumula por batch y se hace el envio cuando se llena
+// hay un envio final fuera del loop para el remanente
 func (client *Client) sendBets() error {
 	inputFile, err := os.Open(client.config.InputFile)
 	if err != nil {
@@ -146,7 +158,7 @@ func (client *Client) sendBets() error {
 			return err
 		}
 
-		batch, batchBytes, batchBets, err = client.accumulateBatch(batch, batchBets, batchBytes, encodedNewBet)
+		batch, batchBytes, batchBets, err = client.accumulateOrSendBatch(batch, batchBets, batchBytes, encodedNewBet)
 		if err != nil {
 			return err
 		}
@@ -165,7 +177,9 @@ func (client *Client) sendBets() error {
 	return nil
 }
 
-func (client *Client) accumulateBatch(batch []byte, batchBets int, batchBytes int, encodedNewBet []byte) ([]byte, int, int, error) {
+// se corta y se envia el batch por dos razones distintas:
+// llegar a batch_size o estar por superar el largo de payload maximo
+func (client *Client) accumulateOrSendBatch(batch []byte, batchBets int, batchBytes int, encodedNewBet []byte) ([]byte, int, int, error) {
 	if batchBets == client.batchSize || batchBytes+len(encodedNewBet) > protocol.MaxPayloadSize {
 		if err := client.SendBatch(batch); err != nil {
 			return nil, 0, 0, err
@@ -179,6 +193,11 @@ func (client *Client) accumulateBatch(batch []byte, batchBets int, batchBytes in
 	return batch, batchBytes, batchBets + 1, nil
 }
 
+// sendBuf se reutiliza entre llamadsa a SendBatch (en
+// vez de alocar un buffer por batch)
+// la idea es que guarda la capacidad maxima de batch
+// y no vuelve a crecer despues de eso
+// se envia un batch y se espera el ack del server
 func (client *Client) SendBatch(payload []byte) error {
 	sendBuf, err := protocol.AppendBatch(client.sendBuf[:0], client.agency, payload)
 	if err != nil {
@@ -204,6 +223,11 @@ func (client *Client) SendBatch(payload []byte) error {
 	return nil
 }
 
+// para no depender de la existencia de la carpeta, se crea si no existe
+// recibimos winner -> mandamos ack
+// despues de cada winner, se hace flush, si se corta
+// la ejecucion lo recibido ya habra quedado persistido
+// tiene un costo asociado, quizas no conviene
 func (client *Client) receiveWinners() error {
 	if err := os.MkdirAll(filepath.Dir(client.config.OutputFile), 0o755); err != nil {
 		logger.Error("create-output-dir", logger.Fail)
@@ -248,7 +272,8 @@ func (client *Client) receiveWinners() error {
 			strconv.FormatUint(uint64(winner.Number), 10),
 		}
 
-		if _, err := writer.WriteString(strings.Join(row, ",") + "\n"); err != nil {
+		line := strings.Join(row, ",") + "\n"
+		if _, err := writer.WriteString(line); err != nil {
 			logger.Error("write-output", logger.Fail)
 			return err
 		}
@@ -267,6 +292,8 @@ func (client *Client) receiveWinners() error {
 	return nil
 }
 
+// se usa bytes.Cut para no alocar con bytes.Split
+// el ultimo chequeo es para asegurarnos que no hay mas campos
 func (client *Client) encodeBet(buf []byte, line []byte) ([]byte, error) {
 	name, rest, ok := bytes.Cut(line, []byte(","))
 	if !ok {
