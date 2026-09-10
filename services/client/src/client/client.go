@@ -12,8 +12,8 @@ import (
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/protocol"
 )
 
-const CONNECTION_ATTEMPTS_MAX = 3
-const CONNECTION_ATTEMPS_DELAY_MS = 200
+const CONNECTION_ATTEMPTS_MAX = 10
+const CONNECTION_ATTEMPS_DELAY_MS = 500
 
 type ClientConfig struct {
 	ServerHost string

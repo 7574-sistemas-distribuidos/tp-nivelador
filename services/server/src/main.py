@@ -6,11 +6,14 @@ import server
 
 SERVER_HOST = os.environ["SERVER_HOST"]
 SERVER_PORT = int(os.environ["SERVER_PORT"])
+AGENCY_QUORUM_MIN = int(os.environ.get("AGENCY_QUORUM_MIN", 1))
 
 
 def main():
     logger.init()
-    s = server.Server(SERVER_HOST, SERVER_PORT)
+    s = server.Server(
+        SERVER_HOST, SERVER_PORT, agency_quorum_min=AGENCY_QUORUM_MIN
+    )
     try:
         s.run()
     except Exception as e:
