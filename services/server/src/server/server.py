@@ -1,4 +1,5 @@
 import socket
+import threading
 import logger 
 import lottery
 from protocol import (PacketType, receive_from, send_response, send_ack,
@@ -12,11 +13,17 @@ class Server:
     def __init__(self, server_host: str, server_port: int) -> None:
         self.server_host = server_host
         self.server_port = server_port
+        open(BETS_FILE, 'w').close()
+        self.lottery = lottery.Lottery(BETS_FILE)
+
+        self.quorum = int(3)
+        self.lock = threading.Lock()
+        self.winners = None
+
+        self.barrier = threading.Barrier(self.quorum, action=self._calculate_winners)
 
     def _handle_client(self, client_socket):
         action = "handle-client"
-        open(BETS_FILE, 'w').close()   #limpiamos el archivo al iniciar una conexion
-        bets = lottery.Lottery(BETS_FILE)
         seq_num = INIT_SEQ_NUM
         try:
             logger.info(action, logger.LogResult.in_progress)
@@ -26,18 +33,19 @@ class Server:
             while True:
                 packet = receive_from(client_socket)
                 if packet.type() == PacketType.REQUEST.value:
-                    seq_num, bets = self._receive_bets(client_socket, packet, bets, seq_num)
+                    seq_num = self._receive_bets(client_socket, packet, seq_num)
                 elif packet.type() == PacketType.EOF.value:
                     send_ack(client_socket, packet.sequence_number(), b'OK')
                     logger.info(action, logger.LogResult.in_progress, "eof-received")
                     seq_num = packet.sequence_number() + 1
                     break
-                else:
-                    logger.error("unknown-packet-type", packet.type())
-                    send_ack(client_socket, packet.sequence_number(), b'UNKNOWN')
-                    return
 
-            seq_num = self._send_winners(client_socket, seq_num, bets)
+            self.barrier.wait()
+
+            with self.lock:
+                winners = self.winners
+
+            seq_num = self._send_winners(client_socket, seq_num, agency_id, winners)
 
             send_eof(client_socket, seq_num)
             ack = receive_from(client_socket)
@@ -46,10 +54,8 @@ class Server:
                 return
 
             logger.info(action, logger.LogResult.success, "finished")
-
         except Exception as e:
             logger.error(action, logger.LogResult.fail, "error", str(e))
-            raise
 
     def _receive_init(self, client_socket):
         action = "handle-init"
@@ -68,37 +74,37 @@ class Server:
         logger.info(action, logger.LogResult.in_progress, "init-received", "agency_id", agency_id)
         return agency_id, packet.sequence_number() + 1
 
-    def _receive_bets(self, client_socket, packet, bets, seq_num):
+    def _receive_bets(self, client_socket, packet, seq_num):
         action = "receive-bets"
         try:
             bets_list = deserialize_batch(packet.payload())
+            with self.lock:
+                self.lottery.store_bets(bets_list)
         except Exception as e:
-            logger.error("batch-deserialize-error", str(e))
+            logger.error(action, "Error", str(e))
             send_ack(client_socket, packet.sequence_number(), b'ERROR')
-            return seq_num, bets  
-        try:
-            bets.store_bets(bets_list) 
-        except Exception as e:
-            logger.error("store-bets-error", str(e))
-            send_ack(client_socket, packet.sequence_number(), b'ERROR')
-            return seq_num, bets
-
+            return seq_num
         send_ack(client_socket, packet.sequence_number(), b'OK')
         logger.info(action, logger.LogResult.in_progress, "batch-stored", "count", len(bets_list), "seq", packet.sequence_number())
-        seq_num = packet.sequence_number() + 1
-        return seq_num, bets
+        return packet.sequence_number() + 1
 
-    def _send_winners(self, client_socket, seq_num, bets):
+    def _calculate_winners(self):
+        action = "quorum-reached"
+        with self.lock:
+            all_bets = self.lottery.load_bets()
+            self.winners = [b for b in all_bets if self.lottery.has_won(b)]
+            logger.info(action, logger.LogResult.success,"winners", len(self.winners))
+            
+
+    def _send_winners(self, client_socket, seq_num, agency_id, winners):
         action = "send-winners"
-        all_bets = bets.load_bets()
-        winners = [bet for bet in all_bets if bets.has_won(bet)]
-        logger.info(action, logger.LogResult.in_progress, "winners", len(winners))
-
-        for bet in winners:
+        my_winners = [b for b in winners if b.agency_id == agency_id]
+        logger.info(action, logger.LogResult.in_progress, "agency_id", agency_id, "count", len(my_winners))
+        for bet in my_winners:
             send_response(client_socket, seq_num, bet)
             ack = receive_from(client_socket)
             if ack.type() != PacketType.ACK.value or ack.sequence_number() != seq_num:
-                raise ValueError(f"ACK mismatch: expected {seq_num}, got {ack.sequence_number()}")
+                raise ValueError(f"ACK mismatch: expected {seq_num}")
             seq_num += 1
         return seq_num
 
@@ -115,5 +121,4 @@ class Server:
                     logger.error(action, logger.LogResult.fail)
                     continue  # raise e
                 logger.info(action, logger.LogResult.success)
-
-                self._handle_client(client_socket)
+                threading.Thread(target=self._handle_client, args=(client_socket,)).start()
