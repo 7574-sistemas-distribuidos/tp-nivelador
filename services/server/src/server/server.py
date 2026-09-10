@@ -1,13 +1,14 @@
 import os
 import socket
 import threading
-import logger 
+import logger
 import lottery
 from protocol import (PacketType, receive_from, send_response, send_ack,
                       send_eof, deserialize_batch)
- 
+
 BETS_FILE = "bets.csv"
 INIT_SEQ_NUM = 0
+
 
 class Server:
     def __init__(self, server_host: str, server_port: int) -> None:
@@ -22,6 +23,35 @@ class Server:
 
         self.barrier = threading.Barrier(self.quorum, action=self._calculate_winners)
 
+   
+        self.shutdown_event = threading.Event()
+        self.server_socket = None
+        self.active_clients = []          
+        self.active_clients_lock = threading.Lock()
+
+    def shutdown(self):
+        logger.info("shutdown", logger.LogResult.in_progress)
+        self.shutdown_event.set()
+
+        if self.server_socket is not None:
+            try:
+                self.server_socket.close()
+            except OSError:
+                pass
+
+        with self.active_clients_lock:
+            clients_snapshot = list(self.active_clients)
+        for client_socket, _ in clients_snapshot:
+            try:
+                client_socket.close()
+            except OSError:
+                pass
+
+        try:
+            self.barrier.abort()
+        except Exception:
+            pass
+
     def _handle_client(self, client_socket):
         action = "handle-client"
         seq_num = INIT_SEQ_NUM
@@ -30,7 +60,11 @@ class Server:
 
             agency_id, seq_num = self._receive_init(client_socket)
             logger.info(action, logger.LogResult.in_progress, "agency_id", agency_id)
+
             while True:
+                if self.shutdown_event.is_set():
+                    logger.info(action, "shutdown-detected")
+                    return
                 packet = receive_from(client_socket)
                 if packet.type() == PacketType.REQUEST.value:
                     seq_num = self._receive_bets(client_socket, packet, seq_num)
@@ -40,7 +74,16 @@ class Server:
                     seq_num = packet.sequence_number() + 1
                     break
 
-            self.barrier.wait()
+            if self.shutdown_event.is_set():
+                return
+            try:
+                self.barrier.wait()
+            except threading.BrokenBarrierError:
+                logger.info(action, "barrier-aborted")
+                return
+
+            if self.shutdown_event.is_set():
+                return
 
             with self.lock:
                 winners = self.winners
@@ -56,6 +99,11 @@ class Server:
             logger.info(action, logger.LogResult.success, "finished")
         except Exception as e:
             logger.error(action, logger.LogResult.fail, "error", str(e))
+        finally:
+            try:
+                client_socket.close()
+            except OSError:
+                pass
 
     def _receive_init(self, client_socket):
         action = "handle-init"
@@ -110,15 +158,38 @@ class Server:
 
     def run(self):
         action = "accept-connection"
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-            server_socket.bind((self.server_host, self.server_port))
-            server_socket.listen()
-            while True:
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_socket.bind((self.server_host, self.server_port))
+        self.server_socket.listen()
+        self.server_socket.settimeout(1.0)  
+
+        try:
+            while not self.shutdown_event.is_set():
                 try:
                     logger.info(action, logger.LogResult.in_progress)
-                    client_socket, _ = server_socket.accept()
-                except Exception as e:
-                    logger.error(action, logger.LogResult.fail)
-                    continue  # raise e
+                    client_socket, _ = self.server_socket.accept()
+                except socket.timeout:
+                    continue
+                except OSError:
+                    break
                 logger.info(action, logger.LogResult.success)
-                threading.Thread(target=self._handle_client, args=(client_socket,)).start()
+
+                t = threading.Thread(target=self._handle_client, args=(client_socket,))
+                with self.active_clients_lock:
+                    self.active_clients.append((client_socket, t))
+                t.start()
+        finally:
+            try:
+                self.server_socket.close()
+            except OSError:
+                pass
+
+            with self.active_clients_lock:
+                threads = [t for _, t in self.active_clients]
+            for t in threads:
+                t.join(timeout=2)
+                if t.is_alive():
+                    logger.warn("shutdown", "thread-still-alive")
+
+            logger.info("server-shutdown", logger.LogResult.success)

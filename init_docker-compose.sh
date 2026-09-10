@@ -5,7 +5,7 @@
 CLIENTES="$1"
 SERVER_PORT=5678
 FILE_NAME="docker-compose.yaml"
-BATCH_SIZE=500
+BATCH_SIZE=50
 AGENCY_QUORUM_MIN=3
 
 if [ -z "$CLIENTES" ] || [ "$CLIENTES" -le 0 ]; then

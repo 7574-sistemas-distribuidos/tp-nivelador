@@ -11,8 +11,6 @@ def recv_all(socket: socket.socket, size):
     while total_bytes_received < size:
         received = socket.recv(size - total_bytes_received)
         if not received:
-            if total_bytes_received == 0:
-                return b''
             raise RuntimeError("Socket connection error")
         buffer += received
         total_bytes_received += len(received)
@@ -23,7 +21,5 @@ def send_all(socket: socket.socket, bytes):
     total_bytes_sent = 0
     while total_bytes_sent < len(bytes):
         sent = socket.send(bytes[total_bytes_sent:])
-        if sent == 0:
-            raise RuntimeError("Socket connection error")
         total_bytes_sent += sent
     return total_bytes_sent

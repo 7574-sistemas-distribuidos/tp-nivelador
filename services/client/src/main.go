@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"os"
+	"os/signal"
+	"syscall"
 
 	client "github.com/7574-sistemas-distribuidos/tp-nivelador/src/client"
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
@@ -28,13 +30,12 @@ func loadConfig() (client.ClientConfig, error) {
 	if batchSize == "" {
 		return client.ClientConfig{}, errors.New("BATCH_SIZE environment variable is required")
 	}
-	
 
 	return client.ClientConfig{
 		ServerHost: serverHost,
 		ServerPort: serverPort,
 		AgencyId:   agencyId,
-		BatchSize: batchSize,
+		BatchSize:  batchSize,
 	}, nil
 }
 
@@ -45,17 +46,34 @@ func run() int {
 		return 1
 	}
 
-	client, err := client.NewClient(config)
+	c, err := client.NewClient(config)
 	if err != nil {
 		logger.Error("client-new", logger.Fail, "err", err)
 		return 1
 	}
 
-	if err := client.Run(); err != nil {
-		logger.Error("client-run", logger.Fail, "err", err)
-		return 1
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- c.Run()
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			logger.Error("client-run", logger.Fail, "err", err)
+			return 1
+		}
+		return 0
+	case sig := <-sigCh:
+		logger.Info("sigterm-received", logger.InProgress, "signal", sig.String())
+		c.Close()
+		<-done
+		logger.Info("shutdown", logger.Success)
+		return 0
 	}
-	return 0
 }
 
 func main() {
