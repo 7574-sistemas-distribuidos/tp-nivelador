@@ -20,11 +20,7 @@ import (
 const CONNECTION_ATTEMPTS_MAX = 3
 const CONNECTION_ATTEMPS_DELAY_MS = 1000
 
-const ECHO_CLIENT_BUFFER_SIZE = 1
-const ECHO_CLIENT_MESSAGE_AMOUNT = 3
 const ECHO_CLIENT_MESSAGE_DELAY_MS = 1000
-const RETRY_ATTEMPTS_MAX = 3
-const RETRY_ATTEMPTS_DELAY_MS = 500
 
 type ClientConfig struct {
 	ServerHost    string
@@ -90,6 +86,7 @@ func (client *Client) Run() error {
 			_ = client.conn.Close()
 		}
 	}()
+
 	packetSize, err := strconv.Atoi(client.config.BatchSize)
 	thereArePacketsToSend := true
 	reader, err := filehandler.NewCSVReader(client.config.InputFilePath)
