@@ -1,4 +1,6 @@
 import socket
+import threading
+
 
 import logger
 from lottery.lottery import Lottery
@@ -19,6 +21,7 @@ from protocol.messages.serialization.outgoing import (
 
 _BETS_STORAGE_PATH = "bets.csv"
 
+
 class Server:
     def __init__(
         self, server_host: str, server_port: int, agency_quorum_min: int
@@ -27,6 +30,7 @@ class Server:
         self._server_port = server_port
         self._agency_quorum_min = agency_quorum_min
         self._lottery = Lottery(_BETS_STORAGE_PATH)
+        self._threads = []
 
     def _handle_client(self, client_socket):
         action = "handle-client"
@@ -72,9 +76,18 @@ class Server:
                     message_channel.send(BetWinnerMessage(bet))
             message_channel.send(FinalizeBetWinnersSendingMessage())
 
+    def _run_session(self, client_socket):
+        action = "handle-client"
+        try:
+            self._handle_client(client_socket)
+        except (ConnectionError, ProtocolError) as e:
+            logger.error(action, logger.LogResult.fail, "err", e)
+        except Exception as e:
+            logger.error(action, logger.LogResult.fail, "err", e)
+            raise
+
     def run(self):
         accept_action = "accept-connection"
-        handle_action = "handle-client"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.bind((self._server_host, self._server_port))
             server_socket.listen()
@@ -82,15 +95,12 @@ class Server:
                 try:
                     logger.info(accept_action, logger.LogResult.in_progress)
                     client_socket, _ = server_socket.accept()
+                    client_thread = threading.Thread(
+                        target=self._run_session, args=(client_socket,)
+                    )
+                    self._threads.append(client_thread)
+                    client_thread.start()
                 except Exception as e:
                     logger.error(accept_action, logger.LogResult.fail)
                     raise e
                 logger.info(accept_action, logger.LogResult.success)
-
-                try:
-                    self._handle_client(client_socket)
-                except (ConnectionError, ProtocolError) as e:
-                    logger.error(handle_action, logger.LogResult.fail, "err", e)
-                except Exception as e:
-                    logger.error(handle_action, logger.LogResult.fail, "err", e)
-                    raise
