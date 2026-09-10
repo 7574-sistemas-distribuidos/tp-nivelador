@@ -22,16 +22,24 @@ class StartBetsSendingMessage:
         return self._agency_id
 
 
-class FilledBetMessage:
-    def __init__(self, record: BetRecord):
-        self._bet_record = record
+class FilledBetsMessage:
+    def __init__(self, records: list[BetRecord]):
+        self._bet_records = records
 
     @classmethod
     def from_bytes(cls, payload):
-        return cls(BetRecord.from_bytes(payload))
+        if len(payload) == 0:
+            raise ProtocolError("filled_bets carries no bet records")
 
-    def bet_for(self, agency_id: int):
-        return self._bet_record.to_bet(agency_id)
+        records = []
+        offset = 0
+        while offset < len(payload):
+            record, offset = BetRecord.consume_from(payload, offset)
+            records.append(record)
+        return cls(records)
+
+    def bets_for(self, agency_id: int):
+        return [record.to_bet(agency_id) for record in self._bet_records]
 
 
 class FinalizeBetsSendingMessage:

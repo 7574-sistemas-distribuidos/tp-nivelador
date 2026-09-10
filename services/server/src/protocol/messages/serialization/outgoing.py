@@ -27,3 +27,19 @@ class FinalizeBetWinnersSendingMessage:
 
     def payload(self):
         return b""
+
+
+class ProcessedBetsBatchMessage:
+    def type(self):
+        return b"\x07"
+
+    def payload(self):
+        return b""
+
+
+class RejectedBetsBatchMessage:
+    def type(self):
+        return b"\x08"
+
+    def payload(self):
+        return b""

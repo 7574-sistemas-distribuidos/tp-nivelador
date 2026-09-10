@@ -4,14 +4,14 @@ from protocol.errors import ProtocolError
 from protocol.messages.deserialization.incoming import (
     FinalizeBetsSendingMessage,
 )
-from protocol.messages.deserialization.incoming import FilledBetMessage, StartBetsSendingMessage
+from protocol.messages.deserialization.incoming import FilledBetsMessage, StartBetsSendingMessage
 
 _TYPE_BYTES = 1
 _LENGTH_BYTES = 2
 
 _MESSAGE_BY_TYPE = {
     b"\x01": StartBetsSendingMessage,
-    b"\x02": FilledBetMessage,
+    b"\x02": FilledBetsMessage,
     b"\x03": FinalizeBetsSendingMessage,
 }
 

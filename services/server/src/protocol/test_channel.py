@@ -7,7 +7,7 @@ from protocol.messages.serialization.outgoing import (
     FinalizeBetWinnersSendingMessage,
 )
 from lottery.bet import Bet
-from protocol.messages.deserialization.incoming import FilledBetMessage, FinalizeBetsSendingMessage, StartBetsSendingMessage
+from protocol.messages.deserialization.incoming import FilledBetsMessage, FinalizeBetsSendingMessage, StartBetsSendingMessage
 
 
 class FakeSocket:
@@ -100,15 +100,15 @@ class MessageChannelReceiveTests(unittest.TestCase):
 
     CONNECTION_AGENCY_ID = 1
 
-    def test_it_receives_a_filled_bet_message(self):
+    def test_it_receives_a_filled_bets_message(self):
         socket_with_filled_bet_message = FakeSocket(self.FILLED_BET_FRAME)
         channel = MessageChannel(socket_with_filled_bet_message)
 
         message = channel.receive()
 
-        self.assertIsInstance(message, FilledBetMessage)
+        self.assertIsInstance(message, FilledBetsMessage)
         self.assertEqual(
-            message.bet_for(self.CONNECTION_AGENCY_ID),
+            message.bets_for(self.CONNECTION_AGENCY_ID)[0],
             Bet(
                 agency_id=1,
                 first_name="Tiago Nicolás",

@@ -5,13 +5,15 @@ from lottery.lottery import Lottery
 from protocol.channel import MessageChannel
 from protocol.errors import ProtocolError
 from protocol.messages.deserialization.incoming import (
-    FilledBetMessage,
+    FilledBetsMessage,
     FinalizeBetsSendingMessage,
     StartBetsSendingMessage,
 )
 from protocol.messages.serialization.outgoing import (
     BetWinnerMessage,
     FinalizeBetWinnersSendingMessage,
+    ProcessedBetsBatchMessage,
+    RejectedBetsBatchMessage,
     StartBetWinnersSendingMessage,
 )
 
@@ -38,24 +40,28 @@ class Server:
             agency_id = start_bets_sending.agency_id()
 
             while True:
-                message = message_channel.receive()
-                if isinstance(message, FinalizeBetsSendingMessage):
-                    break
-                if not isinstance(message, FilledBetMessage):
-                    raise ProtocolError(
-                        f"expected a filled_bet or a finalize_bets_sending, "
-                        f"got {type(message).__name__}"
+                try:
+                    message = message_channel.receive()
+                    if isinstance(message, FinalizeBetsSendingMessage):
+                        break
+                    if not isinstance(message, FilledBetsMessage):
+                        raise ProtocolError(
+                            f"expected a filled_bets or a finalize_bets_sending, "
+                            f"got {type(message).__name__}"
+                        )
+                    bets = message.bets_for(agency_id)
+                    self._lottery.store_bets(bets)
+                    logger.info(
+                        action,
+                        logger.LogResult.success,
+                        "bets-in-batch",
+                        len(bets),
                     )
-                bet = message.bet_for(agency_id)
-                self._lottery.store_bets([bet])
-                logger.info(
-                    action,
-                    logger.LogResult.success,
-                    "bet-document",
-                    bet.document,
-                    "bet-number",
-                    bet.number,
-                )
+                except ProtocolError:
+                    message_channel.send(RejectedBetsBatchMessage())
+                    raise
+
+                message_channel.send(ProcessedBetsBatchMessage())
 
             message_channel.send(StartBetWinnersSendingMessage())
             for bet in self._lottery.load_bets():

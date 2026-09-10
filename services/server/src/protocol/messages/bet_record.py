@@ -34,13 +34,23 @@ class BetRecord:
 
     @classmethod
     def from_bytes(cls, data):
-        minimum = cls._FIXED_PREFIX_BYTES + cls._NAME_LENGTH_BYTES
-        if len(data) < minimum:
+        record, consumed = cls.consume_from(data)
+        if consumed != len(data):
             raise ProtocolError(
-                f"bet record needs at least {minimum} bytes, got {len(data)}"
+                f"bet record does not consume the payload exactly: "
+                f"{len(data) - consumed} bytes remain"
+            )
+        return record
+
+    @classmethod
+    def consume_from(cls, data, offset=0):
+        minimum = cls._FIXED_PREFIX_BYTES + 2 * cls._NAME_LENGTH_BYTES
+        available = len(data) - offset
+        if available < minimum:
+            raise ProtocolError(
+                f"bet record needs at least {minimum} bytes, got {available}"
             )
 
-        offset = 0
         document = int.from_bytes(
             data[offset : offset + cls._DOCUMENT_BYTES], byteorder="big"
         )
@@ -64,15 +74,16 @@ class BetRecord:
         offset += first_name_length
         last_name_length = data[offset]
         offset += cls._NAME_LENGTH_BYTES
-        if offset + last_name_length != len(data):
+        if offset + last_name_length > len(data):
             raise ProtocolError(
-                f"last_name length {last_name_length} does not consume the record "
-                f"exactly: {len(data) - offset} bytes remain"
+                f"last_name length {last_name_length} overruns the record: "
+                f"only {len(data) - offset} bytes remain"
             )
         last_name = cls._decoded(
             data[offset : offset + last_name_length], "last_name"
         )
-        return cls(document, number, birthdate, first_name, last_name)
+        offset += last_name_length
+        return cls(document, number, birthdate, first_name, last_name), offset
 
     @classmethod
     def _decoded(cls, raw, field):
