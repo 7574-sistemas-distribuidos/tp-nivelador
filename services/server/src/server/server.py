@@ -32,6 +32,8 @@ class Server:
         self._lottery = Lottery(_BETS_STORAGE_PATH)
         self._threads = []
         self._bets_file_lock = threading.Lock()
+        self._finished_agencies = 0
+        self._lottery_draw = threading.Condition()
 
     def _handle_client(self, client_socket):
         action = "handle-client"
@@ -72,11 +74,21 @@ class Server:
 
                 message_channel.send(ProcessedBetsBatchMessage())
 
-            message_channel.send(StartBetWinnersSendingMessage())
-            for bet in self._lottery.load_bets():
-                if bet.agency_id == agency_id and self._lottery.has_won(bet):
-                    message_channel.send(BetWinnerMessage(bet))
-            message_channel.send(FinalizeBetWinnersSendingMessage())
+            with self._lottery_draw:
+                self._finished_agencies += 1
+                self._lottery_draw.notify_all()
+                self._lottery_draw.wait_for(
+                    lambda: self._finished_agencies >= self._agency_quorum_min
+                )
+
+            self._compute_loterry_draw_from_bets(message_channel, agency_id)
+
+    def _compute_loterry_draw_from_bets(self, message_channel, agency_id):
+        message_channel.send(StartBetWinnersSendingMessage())
+        for bet in self._lottery.load_bets():
+            if bet.agency_id == agency_id and self._lottery.has_won(bet):
+                message_channel.send(BetWinnerMessage(bet))
+        message_channel.send(FinalizeBetWinnersSendingMessage())
 
     def _run_session(self, client_socket):
         action = "handle-client"
