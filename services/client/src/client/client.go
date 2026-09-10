@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"net"
@@ -63,9 +64,14 @@ func connectToServer(host, port string) (net.Conn, error) {
 	return conn, err
 }
 
-func (client *Client) Run() error {
+func (client *Client) Run(ctx context.Context) error {
 	const action = "run-client"
 	defer client.conn.Close()
+
+	go func() {
+		<-ctx.Done()
+		client.conn.Close()
+	}()
 
 	inputFile, err := os.Open(client.config.InputFile)
 	if err != nil {
