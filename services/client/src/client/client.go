@@ -11,11 +11,8 @@ import (
 )
 
 const CONNECTION_ATTEMPTS_MAX = 3
-const CONNECTION_ATTEMPS_DELAY_MS = 500 // 200
-
-const INPUT_FILE = "/app/input/input-"
-const OUTPUT_FILE = "/app/output/output-"
-const FILE_EXTENSION = ".csv"
+const CONNECTION_ATTEMPS_DELAY_MS = 1000 // 200
+ 
 const RETRY_MAX = 5
 const INIT_SEQ_NUM = 0
 
@@ -67,14 +64,14 @@ func (client *Client) Run() error {
 	const mainAction = "client-run"
 	defer client.conn.Close()
 
-	inputFile, err := os.Open(INPUT_FILE + client.config.AgencyId + FILE_EXTENSION)
+	inputFile, err := os.Open(os.Getenv("INPUT_FILE"))
 	if err != nil {
 		logger.Error(mainAction, logger.Fail, "agency-id", client.config.AgencyId)
 		return err
 	}
 	defer inputFile.Close()
 
-	outputFile, err := os.Create(OUTPUT_FILE + client.config.AgencyId + FILE_EXTENSION)
+	outputFile, err := os.Create(os.Getenv("OUTPUT_FILE"))
 	if err != nil {
 		logger.Error(mainAction, logger.Fail, "agency-id", client.config.AgencyId)
 		return err

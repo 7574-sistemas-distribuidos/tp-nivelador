@@ -38,12 +38,14 @@ for ((i=0; i<CLIENTES; i++)); do
     depends_on:
       - server
     volumes:
-      - ./input:/app/input
-      - ./output:/app/output
+      - ./input:/input
+      - ./output:/output
     environment:
       - AGENCY_ID=$i
       - SERVER_HOST=server
       - SERVER_PORT=$SERVER_PORT
+      - INPUT_FILE=/input/input-$i.csv
+      - OUTPUT_FILE=/output/output-$i.csv
       - BATCH_SIZE=$BATCH_SIZE
 EOF
 done
