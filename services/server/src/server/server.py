@@ -31,6 +31,7 @@ class Server:
         self._agency_quorum_min = agency_quorum_min
         self._lottery = Lottery(_BETS_STORAGE_PATH)
         self._threads = []
+        self._bets_file_lock = threading.Lock()
 
     def _handle_client(self, client_socket):
         action = "handle-client"
@@ -57,7 +58,8 @@ class Server:
                             f"got {type(message).__name__}"
                         )
                     bets = message.bets_for(agency_id)
-                    self._lottery.store_bets(bets)
+                    with self._bets_file_lock:
+                        self._lottery.store_bets(bets)
                     logger.info(
                         action,
                         logger.LogResult.success,
