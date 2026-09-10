@@ -10,6 +10,8 @@ from coordinator import Coordinator,SHUTDOWN
 
 class Server:
     def __init__(self, server_host: str, server_port: int, agency_quorum_min: int) -> None:
+        """arma el servidor: loteria, lock compartido con el coordinador, 
+         el estado de shutdown y threads que se usa en run"""
         self.server_host = server_host
         self.server_port = server_port
         self.lottery = Lottery("bets.csv")
@@ -22,6 +24,13 @@ class Server:
 
 
     def _handle_client(self, client_socket):
+        """conexion con una agencia: recibe apuestas, espera a que
+        el coordinador calcule sus ganadores y se los envia. 
+        si llega un shutdown mientras espera el quorum, wait_for_winners 
+        devuelve none y se corta, pero si llega mientras hace lectura/escritura 
+        el socket va a tirar una excepcion por forzar el cierre. 
+        Aca distinguimos el error segun el shutdown_event y en ambos casos,
+        se cierra el socket"""
         action = "handle-client"
         message_ammount = 0
         agency = None
@@ -47,6 +56,8 @@ class Server:
             client_socket.close()
 
     def _send_winners(self, client_socket, winners):
+        """"manda los winners de una agencia uno a uno, esperando el ack 
+        de cada uno, cierra con un END."""
         for winner in winners: 
             safe_socket.send_all(
                     client_socket,
@@ -67,6 +78,8 @@ class Server:
 
 
     def _wait_for_winners(self, agency):
+        """registra a la agencia en el coordinador y se bloquea
+        hasta que el sorteo se resuelva o llegue un shutdown"""
         action = "wait-for-winners"
         client_channel = queue.Queue() 
         self.coordinator.get_channel().put((agency, client_channel))
@@ -80,6 +93,8 @@ class Server:
         return winners 
             
     def _receive_bets(self, client_socket):
+        """lee batches de apuestas de un cliente hasta END, 
+        toma el lock de lotery para persistir"""
         message_amount = 0
         while True:
             is_end, data = read_expected(client_socket, BATCH)
@@ -99,6 +114,11 @@ class Server:
 
 
     def run(self):
+        """loop principal del servidor: abre el socket para escuchar, arranca 
+        el hilo del coordinador, instala el handler de SIGTERM y por cada 
+        conexion aceptada lanza un hilo de handle_client. 
+        al recibir shutdown, joinea todos los hilos antes de retornar, de los
+        clientes y del coordinador"""
         action = "accept-connection"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             self.server_socket = server_socket
@@ -134,6 +154,11 @@ class Server:
 
 
     def _handle_sigterm(self, signum, frame): 
+        """handler de SIGTERM, marca el shutdown, cierra el socekt 
+         de escucha y fuerza el cierre de los sockets de clientes, 
+          despierta al coordinador (que estara esperando mas clientes) para 
+           que libere a cualquiera esperando el quorum 
+            evitamos logear osError yaque pudo haberse cerrado solo """
         self.shutdown_event.set()
         self.server_socket.close()
 
