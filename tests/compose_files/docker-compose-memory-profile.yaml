@@ -23,7 +23,9 @@ services:
       - SERVER_PORT=5678
       - INPUT_FILE=/input/test-data.csv
       - OUTPUT_FILE=/output/output-0.csv
-      - BATCH_SIZE=8
+      - BATCH_SIZE=32
+      - GOGC=20
+      - GOMEMLIMIT=20MiB
     volumes:
       - ../../input:/input
       - ../../output:/output
