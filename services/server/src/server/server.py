@@ -20,9 +20,12 @@ from protocol.messages.serialization.outgoing import (
 _BETS_STORAGE_PATH = "bets.csv"
 
 class Server:
-    def __init__(self, server_host: str, server_port: int) -> None:
+    def __init__(
+        self, server_host: str, server_port: int, agency_quorum_min: int
+    ) -> None:
         self._server_host = server_host
         self._server_port = server_port
+        self._agency_quorum_min = agency_quorum_min
         self._lottery = Lottery(_BETS_STORAGE_PATH)
 
     def _handle_client(self, client_socket):

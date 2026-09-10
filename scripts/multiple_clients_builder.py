@@ -11,6 +11,7 @@ SERVER_TEMPLATE = """services:
       - 5678:5678
     environment:
       - PYTHONUNBUFFERED=1
+      - AGENCY_QUORUM_MIN={agency_quorum_min}
       - SERVER_HOST=server
       - SERVER_PORT=5678
 """
@@ -40,7 +41,9 @@ def main(number_of_clients_to_create, output_file_path):
     clients_content = clients_content_from(client_registry)
 
     with open(output_file_path, "w") as output_file:
-        output_file.write(SERVER_TEMPLATE)
+        output_file.write(
+            SERVER_TEMPLATE.format(agency_quorum_min=number_of_clients_to_create)
+        )
         output_file.write(clients_content)
 
 
