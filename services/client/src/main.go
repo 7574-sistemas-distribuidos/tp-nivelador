@@ -10,6 +10,8 @@ import (
 	"github.com/7574-sistemas-distribuidos/tp-nivelador/src/logger"
 )
 
+const DEFAULT_BATCH_SIZE = 100
+
 func loadConfig() (client.ClientConfig, error) {
 	rawAgencyId := os.Getenv("AGENCY_ID")
 	if rawAgencyId == "" {
@@ -41,16 +43,15 @@ func loadConfig() (client.ClientConfig, error) {
 		return client.ClientConfig{}, errors.New("OUTPUT_FILE environment variable is required")
 	}
 
-	rawBatchSize := os.Getenv("BATCH_SIZE")
-	if rawBatchSize == "" {
-		return client.ClientConfig{}, errors.New("BATCH_SIZE environment variable is required")
-	}
-	batchSize, err := strconv.Atoi(rawBatchSize)
-	if err != nil {
-		return client.ClientConfig{}, fmt.Errorf("BATCH_SIZE must be a number: %w", err)
-	}
-	if batchSize <= 0 {
-		return client.ClientConfig{}, fmt.Errorf("BATCH_SIZE must be positive, got %d", batchSize)
+	batchSize := DEFAULT_BATCH_SIZE
+	if rawBatchSize := os.Getenv("BATCH_SIZE"); rawBatchSize != "" {
+		batchSize, err = strconv.Atoi(rawBatchSize)
+		if err != nil {
+			return client.ClientConfig{}, fmt.Errorf("BATCH_SIZE must be a number: %w", err)
+		}
+		if batchSize <= 0 {
+			return client.ClientConfig{}, fmt.Errorf("BATCH_SIZE must be positive, got %d", batchSize)
+		}
 	}
 
 	return client.ClientConfig{
